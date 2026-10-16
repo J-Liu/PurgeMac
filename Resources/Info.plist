@@ -28,8 +28,12 @@
 	<string>public.app-category.utilities</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Jia Liu</string>
+	<key>CFBundleIconFile</key>
+	<string>PurgeMac</string>
+	<key>CFBundleIconName</key>
+	<string>PurgeMac</string>
 	<key>SUFeedURL</key>
-	<string>https://example.com/purgemac/appcast.xml</string>
+	<string>https://j-liu.github.io/PurgeMac/appcast.xml</string>
 	<key>SUPublicEDKey</key>
     <string>j8Tzt/L6NLPUrw5vagzFhwAlCvin1fjYYuor3sfxATw=</string>
 </dict>
