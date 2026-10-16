@@ -10,9 +10,9 @@ final class UninstallViewController: NSViewController {
     private let searchField = NSSearchField()
     private let appTableView = NSTableView()
     private let leftoverTableView = NSTableView()
-    private let detailLabel = NSTextField(labelWithString: "Select an app to inspect its leftovers.")
+    private let detailLabel = NSTextField(labelWithString: L("uninstall.select.prompt"))
     private let statusLabel = NSTextField(labelWithString: "")
-    private let uninstallButton = NSButton(title: "卸载", target: nil, action: nil)
+    private let uninstallButton = NSButton(title: L("uninstall.button.uninstall"), target: nil, action: nil)
 
     private var apps: [InstalledApp] = []
     private var filteredApps: [InstalledApp] = []
@@ -30,10 +30,10 @@ final class UninstallViewController: NSViewController {
         appTableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
 
         let appColumns: [(String, String, CGFloat)] = [
-            ("icon", "Icon", 40),
-            ("name", "Name", 220),
-            ("version", "Version", 90),
-            ("bundleID", "Bundle ID", 260),
+            ("icon", L("uninstall.column.icon"), 40),
+            ("name", L("uninstall.column.name"), 220),
+            ("version", L("uninstall.column.version"), 90),
+            ("bundleID", L("uninstall.column.bundleID"), 260),
         ]
         for (identifier, title, width) in appColumns {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(identifier))
@@ -52,7 +52,7 @@ final class UninstallViewController: NSViewController {
         leftoverTableView.dataSource = self
         leftoverTableView.usesAlternatingRowBackgroundColors = true
         let leftoverColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("leftover"))
-        leftoverColumn.title = "Leftovers (unchecked by default)"
+        leftoverColumn.title = L("uninstall.leftover.title")
         leftoverColumn.width = 460
         leftoverColumn.resizingMask = .autoresizingMask
         leftoverTableView.addTableColumn(leftoverColumn)
@@ -102,7 +102,7 @@ final class UninstallViewController: NSViewController {
         ])
 
         searchField.delegate = self
-        searchField.placeholderString = "Search by name or bundle ID"
+        searchField.placeholderString = L("uninstall.search.placeholder")
 
         for subview in [searchField, appScroll, detailPanel] {
             subview.translatesAutoresizingMaskIntoConstraints = false
@@ -167,8 +167,8 @@ final class UninstallViewController: NSViewController {
         selectedLeftoverIndexes.removeAll()
         detailLabel.stringValue = "\(app.name) — v\(app.version)\n\(app.path)"
         statusLabel.stringValue = leftovers.isEmpty
-            ? "No leftovers found."
-            : "\(leftovers.count) leftover item(s) found."
+            ? L("uninstall.leftover.none")
+            : L("uninstall.leftover.count", leftovers.count)
         leftoverTableView.reloadData()
     }
 
@@ -176,7 +176,7 @@ final class UninstallViewController: NSViewController {
         selectedApp = nil
         leftovers = []
         selectedLeftoverIndexes.removeAll()
-        detailLabel.stringValue = "Select an app to inspect its leftovers."
+        detailLabel.stringValue = L("uninstall.select.prompt")
         statusLabel.stringValue = ""
         leftoverTableView.reloadData()
     }
@@ -186,10 +186,10 @@ final class UninstallViewController: NSViewController {
     @objc private func uninstallClicked() {
         guard let app = selectedApp else {
             let alert = NSAlert()
-            alert.messageText = "No app selected"
-            alert.informativeText = "Select an application in the list first."
+            alert.messageText = L("uninstall.alert.noApp.title")
+            alert.informativeText = L("uninstall.alert.noApp.message")
             alert.alertStyle = .informational
-            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: L("uninstall.alert.ok"))
             alert.runModal()
             return
         }
@@ -199,15 +199,15 @@ final class UninstallViewController: NSViewController {
             .map(\.element)
 
         let alert = NSAlert()
-        alert.messageText = "Uninstall \(app.name)?"
-        var informative = "The application will be moved to the Trash."
+        alert.messageText = L("uninstall.alert.confirm.title", app.name)
+        var informative = L("uninstall.alert.confirm.message")
         if !leftoversToClean.isEmpty {
-            informative += "\n\n\(leftoversToClean.count) leftover item(s) will also be moved to the Trash."
+            informative = L("uninstall.alert.confirm.message.withLeftovers", leftoversToClean.count)
         }
         alert.informativeText = informative
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Uninstall")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("uninstall.alert.confirm.uninstall"))
+        alert.addButton(withTitle: L("uninstall.alert.confirm.cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         let appCopy = app
@@ -219,10 +219,10 @@ final class UninstallViewController: NSViewController {
                 let cleanResult = LeftoverCleaner().clean(leftoversCopy)
 
                 DispatchQueue.main.async {
-                    var message = "Moved to Trash: \(appCopy.name)"
-                    message += "\nFreed \(Self.formatBytes(cleanResult.freedBytes))"
+                    var message = L("uninstall.result.moved", appCopy.name)
+                    message += "\n" + L("uninstall.result.freed", Self.formatBytes(cleanResult.freedBytes))
                     if !cleanResult.failures.isEmpty {
-                        message += "\n\(cleanResult.failures.count) leftover item(s) could not be removed."
+                        message += "\n" + L("uninstall.result.partial", cleanResult.failures.count)
                     }
                     self?.statusLabel.stringValue = message
                     self?.selectedApp = nil
@@ -231,10 +231,10 @@ final class UninstallViewController: NSViewController {
             } catch {
                 DispatchQueue.main.async {
                     let errorAlert = NSAlert()
-                    errorAlert.messageText = "Uninstall failed"
+                    errorAlert.messageText = L("uninstall.alert.failed.title")
                     errorAlert.informativeText = error.localizedDescription
                     errorAlert.alertStyle = .critical
-                    errorAlert.addButton(withTitle: "OK")
+                    errorAlert.addButton(withTitle: L("uninstall.alert.ok"))
                     errorAlert.runModal()
                 }
             }

@@ -9,8 +9,8 @@ import PurgeMacCore
 final class CleanViewController: NSViewController {
     private let categoryTableView = NSTableView()
     private let itemTableView = NSTableView()
-    private let statusLabel = NSTextField(labelWithString: "Click Scan next to a category to inspect it.")
-    private let cleanButton = NSButton(title: "清理", target: nil, action: nil)
+    private let statusLabel = NSTextField(labelWithString: L("clean.status.initial"))
+    private let cleanButton = NSButton(title: L("clean.button.clean"), target: nil, action: nil)
 
     private let scanner = JunkScanner()
     private var itemsByCategory: [JunkCategory: [JunkItem]] = [:]
@@ -27,9 +27,9 @@ final class CleanViewController: NSViewController {
         categoryTableView.usesAlternatingRowBackgroundColors = true
 
         let categoryColumns: [(String, String, CGFloat)] = [
-            ("name", "Category", 200),
-            ("size", "Eligible Space", 140),
-            ("action", "", 100),
+            ("name", L("clean.column.category"), 200),
+            ("size", L("clean.column.size"), 140),
+            ("action", L("clean.column.action"), 100),
         ]
         for (identifier, title, width) in categoryColumns {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(identifier))
@@ -47,7 +47,7 @@ final class CleanViewController: NSViewController {
         itemTableView.dataSource = self
         itemTableView.usesAlternatingRowBackgroundColors = true
         let itemColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("item"))
-        itemColumn.title = "Items"
+        itemColumn.title = L("clean.column.items")
         itemColumn.width = 560
         itemColumn.resizingMask = .autoresizingMask
         itemTableView.addTableColumn(itemColumn)
@@ -101,7 +101,7 @@ final class CleanViewController: NSViewController {
         guard sender.tag >= 0, sender.tag < categories.count else { return }
         let category = categories[sender.tag]
 
-        statusLabel.stringValue = "Scanning \(category.displayName)..."
+        statusLabel.stringValue = L("clean.status.scanning", category.localizedDisplayName)
         let scanner = self.scanner
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -114,8 +114,8 @@ final class CleanViewController: NSViewController {
                 self?.categoryTableView.reloadData()
                 self?.refreshItems(for: category)
                 self?.statusLabel.stringValue = category == .largeFiles
-                    ? "\(items.count) large file(s) found (list-only)."
-                    : "\(items.count) item(s) found for \(category.displayName)."
+                    ? L("clean.status.largeFiles", items.count)
+                    : L("clean.status.found", items.count, category.localizedDisplayName)
             }
         }
     }
@@ -137,20 +137,20 @@ final class CleanViewController: NSViewController {
 
         guard !itemsToClean.isEmpty else {
             let alert = NSAlert()
-            alert.messageText = "No items selected"
-            alert.informativeText = "Check the items you want to clean first."
+            alert.messageText = L("clean.alert.noSelection.title")
+            alert.informativeText = L("clean.alert.noSelection.message")
             alert.alertStyle = .informational
-            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: L("uninstall.alert.ok"))
             alert.runModal()
             return
         }
 
         let alert = NSAlert()
-        alert.messageText = "Clean \(itemsToClean.count) item(s)?"
-        alert.informativeText = "Selected items will be moved to the Trash."
+        alert.messageText = L("clean.alert.confirm.title", itemsToClean.count)
+        alert.informativeText = L("clean.alert.confirm.message")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Clean")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("clean.alert.confirm.clean"))
+        alert.addButton(withTitle: L("uninstall.alert.confirm.cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         let itemsCopy = itemsToClean
@@ -164,7 +164,7 @@ final class CleanViewController: NSViewController {
                 self?.itemsByCategory[category] = refreshed
                 self?.refreshItems(for: category)
                 self?.categoryTableView.reloadData()
-                self?.statusLabel.stringValue = "Freed \(Self.formatBytes(result.freedBytes))."
+                self?.statusLabel.stringValue = L("clean.status.freed", Self.formatBytes(result.freedBytes))
             }
         }
     }
@@ -176,11 +176,11 @@ final class CleanViewController: NSViewController {
         let item = items[sender.tag]
 
         let alert = NSAlert()
-        alert.messageText = "Move this file to the Trash?"
+        alert.messageText = L("clean.alert.move.title")
         alert.informativeText = item.path
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Move to Trash")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("clean.button.moveToTrash"))
+        alert.addButton(withTitle: L("uninstall.alert.confirm.cancel"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         let scanner = self.scanner
@@ -191,7 +191,7 @@ final class CleanViewController: NSViewController {
                 self?.itemsByCategory[category] = refreshed
                 self?.refreshItems(for: category)
                 self?.categoryTableView.reloadData()
-                self?.statusLabel.stringValue = "Freed \(Self.formatBytes(result.freedBytes))."
+                self?.statusLabel.stringValue = L("clean.status.freed", Self.formatBytes(result.freedBytes))
             }
         }
     }
@@ -227,7 +227,7 @@ extension CleanViewController: NSTableViewDataSource, NSTableViewDelegate {
         let identifier = tableColumn.identifier
 
         if identifier.rawValue == "action" {
-            let button = NSButton(title: "Scan", target: self, action: #selector(scanCategoryClicked))
+            let button = NSButton(title: L("clean.button.scan"), target: self, action: #selector(scanCategoryClicked))
             button.bezelStyle = .rounded
             button.tag = row
             return button
@@ -246,13 +246,13 @@ extension CleanViewController: NSTableViewDataSource, NSTableViewDelegate {
         ])
 
         if identifier.rawValue == "name" {
-            textField.stringValue = category.displayName
+            textField.stringValue = category.localizedDisplayName
         } else {
             if scannedCategories.contains(category) {
                 let total = JunkScanner.totalSize(of: itemsByCategory[category] ?? [])
                 textField.stringValue = Self.formatBytes(total)
             } else {
-                textField.stringValue = "Not scanned"
+                textField.stringValue = L("junk.notScanned")
             }
         }
         return cell
@@ -272,7 +272,7 @@ extension CleanViewController: NSTableViewDataSource, NSTableViewDelegate {
             label.translatesAutoresizingMaskIntoConstraints = false
             label.lineBreakMode = .byTruncatingMiddle
 
-            let deleteButton = NSButton(title: "Move to Trash", target: self, action: #selector(deleteLargeFileClicked))
+            let deleteButton = NSButton(title: L("clean.button.moveToTrash"), target: self, action: #selector(deleteLargeFileClicked))
             deleteButton.bezelStyle = .rounded
             deleteButton.tag = row
             deleteButton.translatesAutoresizingMaskIntoConstraints = false

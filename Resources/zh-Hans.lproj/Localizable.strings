@@ -1,0 +1,82 @@
+/*
+  Localizable.strings
+  PurgeMac
+
+  Simplified Chinese
+*/
+
+// MARK: - Sidebar
+"sidebar.uninstall" = "卸载应用";
+"sidebar.cleanup" = "清理垃圾";
+
+// MARK: - Settings
+"settings.title" = "设置";
+"settings.language" = "语言";
+"settings.language.system" = "系统默认";
+"settings.language.english" = "English";
+"settings.language.simplifiedChinese" = "简体中文";
+"settings.language.traditionalChinese" = "繁體中文";
+"settings.restartRequired" = "需要重启应用以应用语言更改。";
+"settings.tab.general" = "通用";
+"settings.tab.about" = "关于";
+"settings.about.version" = "版本";
+"settings.about.copyright" = "版权所有 © 2026 Jia Liu";
+
+// MARK: - Uninstall View
+"uninstall.search.placeholder" = "按名称或 Bundle ID 搜索";
+"uninstall.column.icon" = "图标";
+"uninstall.column.name" = "名称";
+"uninstall.column.version" = "版本";
+"uninstall.column.bundleID" = "Bundle ID";
+"uninstall.leftover.title" = "残留文件（默认未选中）";
+"uninstall.select.prompt" = "选择一个应用以查看其残留文件。";
+"uninstall.leftover.none" = "未找到残留文件。";
+"uninstall.leftover.count" = "找到 %d 个残留文件。";
+"uninstall.button.uninstall" = "卸载";
+"uninstall.alert.noApp.title" = "未选择应用";
+"uninstall.alert.noApp.message" = "请先从列表中选择一个应用。";
+"uninstall.alert.confirm.title" = "卸载 %@？";
+"uninstall.alert.confirm.message" = "该应用将被移至废纸篓。";
+"uninstall.alert.confirm.message.withLeftovers" = "该应用将被移至废纸篓。\n\n%d 个残留文件也将被移至废纸篓。";
+"uninstall.alert.confirm.uninstall" = "卸载";
+"uninstall.alert.confirm.cancel" = "取消";
+"uninstall.result.moved" = "已移至废纸篓：%@";
+"uninstall.result.freed" = "释放了 %@";
+"uninstall.result.partial" = "%d 个残留文件无法删除。";
+"uninstall.alert.failed.title" = "卸载失败";
+"uninstall.alert.ok" = "确定";
+
+// MARK: - Clean View
+"clean.status.initial" = "点击类别旁的扫描按钮进行检查。";
+"clean.column.category" = "类别";
+"clean.column.size" = "可释放空间";
+"clean.column.action" = "";
+"clean.column.items" = "项目";
+"clean.button.scan" = "扫描";
+"clean.button.clean" = "清理";
+"clean.status.scanning" = "正在扫描 %@...";
+"clean.status.found" = "在 %@ 中找到 %d 个项目。";
+"clean.status.largeFiles" = "找到 %d 个大文件（仅列出）。";
+"clean.status.freed" = "释放了 %@。";
+"clean.alert.noSelection.title" = "未选择项目";
+"clean.alert.noSelection.message" = "请先勾选要清理的项目。";
+"clean.alert.confirm.title" = "清理 %d 个项目？";
+"clean.alert.confirm.message" = "选中的项目将被移至废纸篓。";
+"clean.alert.confirm.clean" = "清理";
+"clean.button.moveToTrash" = "移至废纸篓";
+"clean.alert.move.title" = "将此文件移至废纸篓？";
+
+// MARK: - Junk Categories
+"junk.userCaches" = "用户缓存";
+"junk.logs" = "日志文件";
+"junk.browserCaches" = "浏览器缓存";
+"junk.developerCaches" = "开发者缓存";
+"junk.largeFiles" = "大文件";
+"junk.trash" = "废纸篓";
+"junk.notScanned" = "未扫描";
+
+// MARK: - Main Menu
+"menu.about" = "关于 %@";
+"menu.checkForUpdates" = "检查更新...";
+"menu.quit" = "退出 %@";
+"menu.preferences" = "偏好设置...";

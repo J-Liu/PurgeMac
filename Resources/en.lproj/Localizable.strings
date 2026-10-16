@@ -1,0 +1,82 @@
+/*
+  Localizable.strings
+  PurgeMac
+
+  English (Base)
+*/
+
+// MARK: - Sidebar
+"sidebar.uninstall" = "Uninstall App";
+"sidebar.cleanup" = "Clean Junk";
+
+// MARK: - Settings
+"settings.title" = "Settings";
+"settings.language" = "Language";
+"settings.language.system" = "System Default";
+"settings.language.english" = "English";
+"settings.language.simplifiedChinese" = "Simplified Chinese";
+"settings.language.traditionalChinese" = "Traditional Chinese";
+"settings.restartRequired" = "Restart required to apply language change.";
+"settings.tab.general" = "General";
+"settings.tab.about" = "About";
+"settings.about.version" = "Version";
+"settings.about.copyright" = "Copyright © 2026 Jia Liu";
+
+// MARK: - Uninstall View
+"uninstall.search.placeholder" = "Search by name or bundle ID";
+"uninstall.column.icon" = "Icon";
+"uninstall.column.name" = "Name";
+"uninstall.column.version" = "Version";
+"uninstall.column.bundleID" = "Bundle ID";
+"uninstall.leftover.title" = "Leftovers (unchecked by default)";
+"uninstall.select.prompt" = "Select an app to inspect its leftovers.";
+"uninstall.leftover.none" = "No leftovers found.";
+"uninstall.leftover.count" = "%d leftover item(s) found.";
+"uninstall.button.uninstall" = "Uninstall";
+"uninstall.alert.noApp.title" = "No app selected";
+"uninstall.alert.noApp.message" = "Select an application in the list first.";
+"uninstall.alert.confirm.title" = "Uninstall %@?";
+"uninstall.alert.confirm.message" = "The application will be moved to the Trash.";
+"uninstall.alert.confirm.message.withLeftovers" = "The application will be moved to the Trash.\n\n%d leftover item(s) will also be moved to the Trash.";
+"uninstall.alert.confirm.uninstall" = "Uninstall";
+"uninstall.alert.confirm.cancel" = "Cancel";
+"uninstall.result.moved" = "Moved to Trash: %@";
+"uninstall.result.freed" = "Freed %@";
+"uninstall.result.partial" = "%d leftover item(s) could not be removed.";
+"uninstall.alert.failed.title" = "Uninstall failed";
+"uninstall.alert.ok" = "OK";
+
+// MARK: - Clean View
+"clean.status.initial" = "Click Scan next to a category to inspect it.";
+"clean.column.category" = "Category";
+"clean.column.size" = "Eligible Space";
+"clean.column.action" = "";
+"clean.column.items" = "Items";
+"clean.button.scan" = "Scan";
+"clean.button.clean" = "Clean";
+"clean.status.scanning" = "Scanning %@...";
+"clean.status.found" = "%d item(s) found for %@.";
+"clean.status.largeFiles" = "%d large file(s) found (list-only).";
+"clean.status.freed" = "Freed %@.";
+"clean.alert.noSelection.title" = "No items selected";
+"clean.alert.noSelection.message" = "Check the items you want to clean first.";
+"clean.alert.confirm.title" = "Clean %d item(s)?";
+"clean.alert.confirm.message" = "Selected items will be moved to the Trash.";
+"clean.alert.confirm.clean" = "Clean";
+"clean.button.moveToTrash" = "Move to Trash";
+"clean.alert.move.title" = "Move this file to the Trash?";
+
+// MARK: - Junk Categories
+"junk.userCaches" = "User Caches";
+"junk.logs" = "Logs";
+"junk.browserCaches" = "Browser Caches";
+"junk.developerCaches" = "Developer Caches";
+"junk.largeFiles" = "Large Files";
+"junk.trash" = "Trash";
+"junk.notScanned" = "Not scanned";
+
+// MARK: - Main Menu
+"menu.about" = "About %@";
+"menu.checkForUpdates" = "Check for Updates...";
+"menu.quit" = "Quit %@";
+"menu.preferences" = "Preferences...";

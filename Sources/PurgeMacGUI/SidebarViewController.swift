@@ -5,7 +5,9 @@ import AppKit
 
 /// Sidebar listing the top-level sections of the app.
 final class SidebarViewController: NSViewController {
-    private let sections = ["卸载 App", "清理垃圾"]
+    private var sections: [String] {
+        [L("sidebar.uninstall"), L("sidebar.cleanup")]
+    }
     private let tableView = NSTableView()
 
     /// Called when the user selects a section, with the selected row index.

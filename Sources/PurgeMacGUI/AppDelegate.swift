@@ -7,9 +7,10 @@ import Sparkle
 /// Application delegate that shows the primary window and configures updates.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
+    private var settingsWindow: SettingsWindow?
 
     /// Standard Sparkle updater controller used for the "Check for Updates" menu item.
-    private let updaterController = SPUStandardUpdaterController(
+    let updaterController = SPUStandardUpdaterController(
         startingUpdater: true,
         updaterDelegate: nil,
         userDriverDelegate: nil
@@ -21,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let splitViewController = MainSplitViewController()
         let window = NSWindow(contentViewController: splitViewController)
         window.title = "PurgeMac"
-        window.setContentSize(NSSize(width: 1000, height: 640))
+        window.setContentSize(NSSize(width: 1100, height: 680))
         window.minSize = NSSize(width: 800, height: 520)
         window.center()
         window.makeKeyAndOrderFront(nil)
@@ -46,7 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let appName = "PurgeMac"
 
         let aboutItem = NSMenuItem(
-            title: "About \(appName)",
+            title: L("menu.about", appName),
             action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
             keyEquivalent: ""
         )
@@ -55,8 +56,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         appMenu.addItem(.separator())
 
+        let preferencesItem = NSMenuItem(
+            title: L("menu.preferences"),
+            action: #selector(showPreferences),
+            keyEquivalent: ","
+        )
+        preferencesItem.target = self
+        appMenu.addItem(preferencesItem)
+
+        appMenu.addItem(.separator())
+
         let checkForUpdatesItem = NSMenuItem(
-            title: "Check for Updates…",
+            title: L("menu.checkForUpdates"),
             action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)),
             keyEquivalent: ""
         )
@@ -66,7 +77,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appMenu.addItem(.separator())
 
         let quitItem = NSMenuItem(
-            title: "Quit \(appName)",
+            title: L("menu.quit", appName),
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -75,5 +86,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         appMenuItem.submenu = appMenu
         NSApp.mainMenu = mainMenu
+    }
+
+    @objc private func showPreferences() {
+        if settingsWindow == nil {
+            settingsWindow = SettingsWindow()
+        }
+        settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    @objc func checkForUpdates() {
+        updaterController.checkForUpdates(nil)
     }
 }

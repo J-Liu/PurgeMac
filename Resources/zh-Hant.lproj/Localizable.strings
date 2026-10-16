@@ -1,0 +1,82 @@
+/*
+  Localizable.strings
+  PurgeMac
+
+  Traditional Chinese
+*/
+
+// MARK: - Sidebar
+"sidebar.uninstall" = "卸載應用程式";
+"sidebar.cleanup" = "清理垃圾";
+
+// MARK: - Settings
+"settings.title" = "設定";
+"settings.language" = "語言";
+"settings.language.system" = "系統預設";
+"settings.language.english" = "English";
+"settings.language.simplifiedChinese" = "简体中文";
+"settings.language.traditionalChinese" = "繁體中文";
+"settings.restartRequired" = "需要重新啟動應用程式以套用語言變更。";
+"settings.tab.general" = "一般";
+"settings.tab.about" = "關於";
+"settings.about.version" = "版本";
+"settings.about.copyright" = "版權所有 © 2026 Jia Liu";
+
+// MARK: - Uninstall View
+"uninstall.search.placeholder" = "按名稱或 Bundle ID 搜尋";
+"uninstall.column.icon" = "圖示";
+"uninstall.column.name" = "名稱";
+"uninstall.column.version" = "版本";
+"uninstall.column.bundleID" = "Bundle ID";
+"uninstall.leftover.title" = "殘留檔案（預設未選取）";
+"uninstall.select.prompt" = "選擇一個應用程式以查看其殘留檔案。";
+"uninstall.leftover.none" = "未找到殘留檔案。";
+"uninstall.leftover.count" = "找到 %d 個殘留檔案。";
+"uninstall.button.uninstall" = "卸載";
+"uninstall.alert.noApp.title" = "未選擇應用程式";
+"uninstall.alert.noApp.message" = "請先從列表中選擇一個應用程式。";
+"uninstall.alert.confirm.title" = "卸載 %@？";
+"uninstall.alert.confirm.message" = "該應用程式將被移至垃圾桶。";
+"uninstall.alert.confirm.message.withLeftovers" = "該應用程式將被移至垃圾桶。\n\n%d 個殘留檔案也將被移至垃圾桶。";
+"uninstall.alert.confirm.uninstall" = "卸載";
+"uninstall.alert.confirm.cancel" = "取消";
+"uninstall.result.moved" = "已移至垃圾桶：%@";
+"uninstall.result.freed" = "釋放了 %@";
+"uninstall.result.partial" = "%d 個殘留檔案無法刪除。";
+"uninstall.alert.failed.title" = "卸載失敗";
+"uninstall.alert.ok" = "確定";
+
+// MARK: - Clean View
+"clean.status.initial" = "點擊類別旁的掃描按鈕進行檢查。";
+"clean.column.category" = "類別";
+"clean.column.size" = "可釋放空間";
+"clean.column.action" = "";
+"clean.column.items" = "項目";
+"clean.button.scan" = "掃描";
+"clean.button.clean" = "清理";
+"clean.status.scanning" = "正在掃描 %@...";
+"clean.status.found" = "在 %@ 中找到 %d 個項目。";
+"clean.status.largeFiles" = "找到 %d 個大檔案（僅列出）。";
+"clean.status.freed" = "釋放了 %@。";
+"clean.alert.noSelection.title" = "未選取項目";
+"clean.alert.noSelection.message" = "請先勾選要清理的項目。";
+"clean.alert.confirm.title" = "清理 %d 個項目？";
+"clean.alert.confirm.message" = "選取的項目將被移至垃圾桶。";
+"clean.alert.confirm.clean" = "清理";
+"clean.button.moveToTrash" = "移至垃圾桶";
+"clean.alert.move.title" = "將此檔案移至垃圾桶？";
+
+// MARK: - Junk Categories
+"junk.userCaches" = "使用者快取";
+"junk.logs" = "日誌檔案";
+"junk.browserCaches" = "瀏覽器快取";
+"junk.developerCaches" = "開發者快取";
+"junk.largeFiles" = "大檔案";
+"junk.trash" = "垃圾桶";
+"junk.notScanned" = "未掃描";
+
+// MARK: - Main Menu
+"menu.about" = "關於 %@";
+"menu.checkForUpdates" = "檢查更新...";
+"menu.quit" = "結束 %@";
+"menu.preferences" = "偏好設定...";
