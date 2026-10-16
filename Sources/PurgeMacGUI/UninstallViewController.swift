@@ -13,12 +13,17 @@ final class UninstallViewController: NSViewController {
     private let detailLabel = NSTextField(labelWithString: L("uninstall.select.prompt"))
     private let statusLabel = NSTextField(labelWithString: "")
     private let uninstallButton = NSButton(title: L("uninstall.button.uninstall"), target: nil, action: nil)
+    private let selectAllCheckbox = NSButton(checkboxWithTitle: L("uninstall.selectAll"), target: nil, action: nil)
+    private let appProgressIndicator = NSProgressIndicator()
+    private let leftoverProgressIndicator = NSProgressIndicator()
 
     private var apps: [InstalledApp] = []
     private var filteredApps: [InstalledApp] = []
     private var selectedApp: InstalledApp?
     private var leftovers: [LeftoverItem] = []
     private var selectedLeftoverIndexes: Set<Int> = []
+    private var isLoadingApps = false
+    private var isLoadingLeftovers = false
 
     override func loadView() {
         let root = NSView()
@@ -48,6 +53,11 @@ final class UninstallViewController: NSViewController {
         appScroll.hasVerticalScroller = true
         appScroll.hasHorizontalScroller = true
 
+        // App loading progress indicator
+        appProgressIndicator.style = .spinning
+        appProgressIndicator.controlSize = .small
+        appProgressIndicator.translatesAutoresizingMaskIntoConstraints = false
+
         leftoverTableView.delegate = self
         leftoverTableView.dataSource = self
         leftoverTableView.usesAlternatingRowBackgroundColors = true
@@ -60,6 +70,17 @@ final class UninstallViewController: NSViewController {
         let leftoverScroll = NSScrollView()
         leftoverScroll.documentView = leftoverTableView
         leftoverScroll.hasVerticalScroller = true
+
+        // Leftover loading progress indicator
+        leftoverProgressIndicator.style = .spinning
+        leftoverProgressIndicator.controlSize = .small
+        leftoverProgressIndicator.translatesAutoresizingMaskIntoConstraints = false
+
+        // Select All checkbox for leftovers
+        selectAllCheckbox.target = self
+        selectAllCheckbox.action = #selector(selectAllLeftoversToggled)
+        selectAllCheckbox.translatesAutoresizingMaskIntoConstraints = false
+        selectAllCheckbox.isHidden = true
 
         let detailPanel = NSView()
         detailPanel.translatesAutoresizingMaskIntoConstraints = false
@@ -76,8 +97,9 @@ final class UninstallViewController: NSViewController {
         uninstallButton.target = self
         uninstallButton.action = #selector(uninstallClicked)
         uninstallButton.bezelStyle = .rounded
+        uninstallButton.isHidden = true
 
-        for subview in [detailLabel, leftoverScroll, statusLabel, uninstallButton] {
+        for subview in [detailLabel, selectAllCheckbox, leftoverProgressIndicator, leftoverScroll, statusLabel, uninstallButton] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             detailPanel.addSubview(subview)
         }
@@ -87,7 +109,13 @@ final class UninstallViewController: NSViewController {
             detailLabel.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
             detailLabel.trailingAnchor.constraint(equalTo: detailPanel.trailingAnchor, constant: -12),
 
-            leftoverScroll.topAnchor.constraint(equalTo: detailLabel.bottomAnchor, constant: 8),
+            selectAllCheckbox.topAnchor.constraint(equalTo: detailLabel.bottomAnchor, constant: 8),
+            selectAllCheckbox.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
+
+            leftoverProgressIndicator.centerXAnchor.constraint(equalTo: leftoverScroll.centerXAnchor),
+            leftoverProgressIndicator.centerYAnchor.constraint(equalTo: leftoverScroll.centerYAnchor),
+
+            leftoverScroll.topAnchor.constraint(equalTo: selectAllCheckbox.bottomAnchor, constant: 4),
             leftoverScroll.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
             leftoverScroll.trailingAnchor.constraint(equalTo: detailPanel.trailingAnchor, constant: -12),
             leftoverScroll.bottomAnchor.constraint(equalTo: statusLabel.topAnchor, constant: -12),
@@ -95,16 +123,15 @@ final class UninstallViewController: NSViewController {
             statusLabel.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
             statusLabel.bottomAnchor.constraint(equalTo: detailPanel.bottomAnchor, constant: -12),
 
-            uninstallButton.trailingAnchor.constraint(equalTo: detailPanel.trailingAnchor, constant: -12),
+            uninstallButton.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
             uninstallButton.bottomAnchor.constraint(equalTo: detailPanel.bottomAnchor, constant: -12),
             uninstallButton.widthAnchor.constraint(equalToConstant: 96),
-            uninstallButton.leadingAnchor.constraint(greaterThanOrEqualTo: statusLabel.trailingAnchor, constant: 12),
         ])
 
         searchField.delegate = self
         searchField.placeholderString = L("uninstall.search.placeholder")
 
-        for subview in [searchField, appScroll, detailPanel] {
+        for subview in [searchField, appProgressIndicator, appScroll, detailPanel] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(subview)
         }
@@ -114,6 +141,9 @@ final class UninstallViewController: NSViewController {
             searchField.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
             searchField.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
             searchField.heightAnchor.constraint(equalToConstant: 30),
+
+            appProgressIndicator.centerXAnchor.constraint(equalTo: appScroll.centerXAnchor),
+            appProgressIndicator.centerYAnchor.constraint(equalTo: appScroll.centerYAnchor),
 
             appScroll.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 12),
             appScroll.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
@@ -131,7 +161,7 @@ final class UninstallViewController: NSViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        refreshApps()
+        refreshAppsAsync()
 
         // Listen for language changes
         NotificationCenter.default.addObserver(
@@ -167,8 +197,9 @@ final class UninstallViewController: NSViewController {
         }
         // Update button title
         uninstallButton.title = L("uninstall.button.uninstall")
+        selectAllCheckbox.title = L("uninstall.selectAll")
         // Refresh detail label if no app selected
-        if selectedApp == nil {
+        if selectedApp == nil && !isLoadingLeftovers {
             detailLabel.stringValue = L("uninstall.select.prompt")
         }
         // Reload tables
@@ -176,12 +207,67 @@ final class UninstallViewController: NSViewController {
         leftoverTableView.reloadData()
     }
 
-    // MARK: - Data
+    // MARK: - Async Data Loading
 
-    private func refreshApps() {
-        apps = AppScanner().scan()
-        filterApps()
+    private func refreshAppsAsync() {
+        isLoadingApps = true
+        appProgressIndicator.startAnimation(nil)
+        appTableView.isHidden = true
+        apps = []
+        filteredApps = []
+        appTableView.reloadData()
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let scannedApps = AppScanner().scan()
+            DispatchQueue.main.async {
+                self?.isLoadingApps = false
+                self?.appProgressIndicator.stopAnimation(nil)
+                self?.appTableView.isHidden = false
+                self?.apps = scannedApps
+                self?.filterApps()
+            }
+        }
     }
+
+    private func selectAppAsync(_ app: InstalledApp?) {
+        selectedApp = app
+        guard let app else {
+            clearSelection()
+            return
+        }
+
+        // Show loading state
+        isLoadingLeftovers = true
+        leftoverProgressIndicator.startAnimation(nil)
+        leftoverTableView.isHidden = true
+        selectAllCheckbox.isHidden = true
+        uninstallButton.isHidden = true
+        detailLabel.stringValue = "\(app.name) — v\(app.version)\n\(app.path)"
+        statusLabel.stringValue = L("uninstall.scanning.leftovers")
+        leftovers = []
+        selectedLeftoverIndexes.removeAll()
+        leftoverTableView.reloadData()
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let scannedLeftovers = LeftoverScanner().scan(bundleID: app.bundleID, appName: app.name)
+            DispatchQueue.main.async {
+                guard let self = self, self.selectedApp?.bundleID == app.bundleID else { return }
+                self.isLoadingLeftovers = false
+                self.leftoverProgressIndicator.stopAnimation(nil)
+                self.leftoverTableView.isHidden = false
+                self.leftovers = scannedLeftovers
+                self.statusLabel.stringValue = scannedLeftovers.isEmpty
+                    ? L("uninstall.leftover.none")
+                    : L("uninstall.leftover.count", scannedLeftovers.count)
+                self.selectAllCheckbox.isHidden = scannedLeftovers.isEmpty
+                self.updateSelectAllCheckboxState()
+                self.updateUninstallButtonVisibility()
+                self.leftoverTableView.reloadData()
+            }
+        }
+    }
+
+    // MARK: - Data
 
     private func filterApps() {
         let query = searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -199,28 +285,16 @@ final class UninstallViewController: NSViewController {
         }
     }
 
-    private func selectApp(_ app: InstalledApp?) {
-        selectedApp = app
-        guard let app else {
-            clearSelection()
-            return
-        }
-        leftovers = LeftoverScanner().scan(bundleID: app.bundleID, appName: app.name)
-        selectedLeftoverIndexes.removeAll()
-        detailLabel.stringValue = "\(app.name) — v\(app.version)\n\(app.path)"
-        statusLabel.stringValue = leftovers.isEmpty
-            ? L("uninstall.leftover.none")
-            : L("uninstall.leftover.count", leftovers.count)
-        leftoverTableView.reloadData()
-    }
-
     private func clearSelection() {
         selectedApp = nil
         leftovers = []
         selectedLeftoverIndexes.removeAll()
         detailLabel.stringValue = L("uninstall.select.prompt")
         statusLabel.stringValue = ""
+        selectAllCheckbox.isHidden = true
+        uninstallButton.isHidden = true
         leftoverTableView.reloadData()
+        updateSelectAllCheckboxState()
     }
 
     // MARK: - Actions
@@ -268,7 +342,7 @@ final class UninstallViewController: NSViewController {
                     }
                     self?.statusLabel.stringValue = message
                     self?.selectedApp = nil
-                    self?.refreshApps()
+                    self?.refreshAppsAsync()
                 }
             } catch {
                 DispatchQueue.main.async {
@@ -289,6 +363,41 @@ final class UninstallViewController: NSViewController {
         } else {
             selectedLeftoverIndexes.remove(sender.tag)
         }
+        updateSelectAllCheckboxState()
+        updateUninstallButtonVisibility()
+    }
+
+    @objc private func selectAllLeftoversToggled(_ sender: NSButton) {
+        if sender.state == .on {
+            for i in 0..<leftovers.count {
+                selectedLeftoverIndexes.insert(i)
+            }
+        } else {
+            selectedLeftoverIndexes.removeAll()
+        }
+        leftoverTableView.reloadData()
+        updateUninstallButtonVisibility()
+    }
+
+    private func updateSelectAllCheckboxState() {
+        if leftovers.isEmpty {
+            selectAllCheckbox.state = .off
+            selectAllCheckbox.isEnabled = false
+        } else if selectedLeftoverIndexes.count == leftovers.count {
+            selectAllCheckbox.state = .on
+            selectAllCheckbox.isEnabled = true
+        } else if selectedLeftoverIndexes.isEmpty {
+            selectAllCheckbox.state = .off
+            selectAllCheckbox.isEnabled = true
+        } else {
+            selectAllCheckbox.state = .mixed
+            selectAllCheckbox.isEnabled = true
+        }
+    }
+
+    private func updateUninstallButtonVisibility() {
+        // Show uninstall button only when an app is selected
+        uninstallButton.isHidden = selectedApp == nil
     }
 
     private static func formatBytes(_ bytes: Int64) -> String {
@@ -371,10 +480,10 @@ extension UninstallViewController: NSTableViewDataSource, NSTableViewDelegate {
         guard let tableView = notification.object as? NSTableView, tableView === appTableView else { return }
         let row = appTableView.selectedRow
         guard row >= 0, row < filteredApps.count else {
-            selectApp(nil)
+            selectAppAsync(nil)
             return
         }
-        selectApp(filteredApps[row])
+        selectAppAsync(filteredApps[row])
     }
 }
 

@@ -12,6 +12,14 @@ public enum LeftoverCategory: String, Codable, CaseIterable {
     case containers = "Containers"
     case groupContainers = "Group Containers"
     case savedApplicationState = "Saved Application State"
+    case webKit = "WebKit"
+    case httpStorages = "HTTPStorages"
+    case applicationScripts = "Application Scripts"
+    case internetPlugIns = "Internet Plug-Ins"
+    case launchAgents = "LaunchAgents"
+    case preferencePanes = "PreferencePanes"
+    case services = "Services"
+    case other = "Other"
 
     /// The on-disk directory backing this category.
     var directoryURL: URL {
@@ -32,6 +40,22 @@ public enum LeftoverCategory: String, Codable, CaseIterable {
             return library.appendingPathComponent("Group Containers", isDirectory: true)
         case .savedApplicationState:
             return library.appendingPathComponent("Saved Application State", isDirectory: true)
+        case .webKit:
+            return library.appendingPathComponent("WebKit", isDirectory: true)
+        case .httpStorages:
+            return library.appendingPathComponent("HTTPStorages", isDirectory: true)
+        case .applicationScripts:
+            return library.appendingPathComponent("Application Scripts", isDirectory: true)
+        case .internetPlugIns:
+            return library.appendingPathComponent("Internet Plug-Ins", isDirectory: true)
+        case .launchAgents:
+            return library.appendingPathComponent("LaunchAgents", isDirectory: true)
+        case .preferencePanes:
+            return library.appendingPathComponent("PreferencePanes", isDirectory: true)
+        case .services:
+            return library.appendingPathComponent("Services", isDirectory: true)
+        case .other:
+            return library
         }
     }
 }
