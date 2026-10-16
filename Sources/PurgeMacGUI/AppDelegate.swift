@@ -44,11 +44,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func languageDidChange() {
+        // Check if settings window is visible
+        let wasSettingsVisible = settingsWindow?.isVisible ?? false
+
         // Recreate main menu
         setupMainMenu()
         // Recreate main window
         window?.close()
         createMainWindow()
+
+        // Bring settings window back to front if it was visible
+        if wasSettingsVisible {
+            settingsWindow?.makeKeyAndOrderFront(nil)
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
