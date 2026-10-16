@@ -1,32 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
-    <channel>
-        <title>PurgeMac Changelog</title>
-        <link>https://j-liu.github.io/PurgeMac/appcast.xml</link>
-        <description>Most recent changes with links to updates.</description>
-        <language>en</language>
-
-        <item>
-            <title>Version 0.1.0</title>
-            <description>
-                <![CDATA[
-                    <h2>Initial Release</h2>
-                    <ul>
-                        <li>System cleanup functionality</li>
-                        <li>GUI and CLI interfaces</li>
-                        <li>Automatic updates via Sparkle</li>
-                    </ul>
-                ]]>
-            </description>
-            <pubDate>Thu, 16 Oct 2026 12:00:00 +0800</pubDate>
-            <enclosure url="https://github.com/J-Liu/PurgeMac/releases/download/v0.1.0/PurgeMac-0.1.0.zip"
-                       sparkle:version="1"
-                       sparkle:shortVersionString="0.1.0"
-                       length="0"
-                       type="application/octet-stream"
-                       sparkle:edSignature=""/>
-            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-        </item>
-
-    </channel>
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>PurgeMac</title>
+    <description>Most recent changes with links to updates.</description>
+    <language>en</language>
+  </channel>
 </rss>
