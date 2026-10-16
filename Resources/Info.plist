@@ -9,7 +9,7 @@
 	<key>CFBundleIdentifier</key>
 	<string>com.jialiu.purgemac</string>
 	<key>CFBundleVersion</key>
-	<string>0.1.0</string>
+	<string>1</string>
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleExecutable</key>
@@ -33,7 +33,7 @@
 	<key>CFBundleIconName</key>
 	<string>PurgeMac</string>
 	<key>SUFeedURL</key>
-	<string>https://j-liu.github.io/PurgeMac/appcast.xml</string>
+	<string>https://J-Liu.github.io/PurgeMac/appcast.xml</string>
 	<key>SUPublicEDKey</key>
     <string>j8Tzt/L6NLPUrw5vagzFhwAlCvin1fjYYuor3sfxATw=</string>
 </dict>
