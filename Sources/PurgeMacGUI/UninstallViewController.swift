@@ -132,6 +132,48 @@ final class UninstallViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         refreshApps()
+
+        // Listen for language changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(languageDidChange),
+            name: .languageChanged,
+            object: nil
+        )
+    }
+
+    @objc private func languageDidChange() {
+        reloadData()
+    }
+
+    func reloadData() {
+        // Update search placeholder
+        searchField.placeholderString = L("uninstall.search.placeholder")
+        // Update column titles
+        if let iconColumn = appTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("icon")) {
+            iconColumn.title = L("uninstall.column.icon")
+        }
+        if let nameColumn = appTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("name")) {
+            nameColumn.title = L("uninstall.column.name")
+        }
+        if let versionColumn = appTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("version")) {
+            versionColumn.title = L("uninstall.column.version")
+        }
+        if let bundleIDColumn = appTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("bundleID")) {
+            bundleIDColumn.title = L("uninstall.column.bundleID")
+        }
+        if let leftoverColumn = leftoverTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("leftover")) {
+            leftoverColumn.title = L("uninstall.leftover.title")
+        }
+        // Update button title
+        uninstallButton.title = L("uninstall.button.uninstall")
+        // Refresh detail label if no app selected
+        if selectedApp == nil {
+            detailLabel.stringValue = L("uninstall.select.prompt")
+        }
+        // Reload tables
+        appTableView.reloadData()
+        leftoverTableView.reloadData()
     }
 
     // MARK: - Data

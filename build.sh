@@ -58,14 +58,6 @@ if [ -f "${ICON_DIR}/${APP_NAME}.icns" ]; then
     cp "${ICON_DIR}/${APP_NAME}.icns" "${APP_BUNDLE}/Contents/Resources/${APP_NAME}.icns"
 fi
 
-# Copy localization files
-echo "==> Copying localization files..."
-for lproj in "${ROOT_DIR}/Resources"/*.lproj; do
-    if [ -d "$lproj" ]; then
-        cp -R "$lproj" "${APP_BUNDLE}/Contents/Resources/"
-    fi
-done
-
 # Copy Sparkle.framework
 SPARKLE_BUILD_DIR="$(swift build -c "$BUILD_CONFIG" --show-bin-path)"
 SPARKLE_FRAMEWORK="${SPARKLE_BUILD_DIR}/../../release/Sparkle.framework"

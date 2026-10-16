@@ -9,6 +9,7 @@ final class SidebarViewController: NSViewController {
         [L("sidebar.uninstall"), L("sidebar.cleanup")]
     }
     private let tableView = NSTableView()
+    private var selectedRow: Int = 0
 
     /// Called when the user selects a section, with the selected row index.
     var onSelect: ((Int) -> Void)?
@@ -43,8 +44,17 @@ final class SidebarViewController: NSViewController {
 
     func selectRow(_ row: Int) {
         guard row >= 0, row < sections.count else { return }
+        selectedRow = row
         tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         onSelect?(row)
+    }
+
+    func reloadData() {
+        tableView.reloadData()
+        // Re-select current row
+        if selectedRow >= 0 && selectedRow < sections.count {
+            tableView.selectRowIndexes(IndexSet(integer: selectedRow), byExtendingSelection: false)
+        }
     }
 }
 
@@ -79,6 +89,7 @@ extension SidebarViewController: NSTableViewDataSource, NSTableViewDelegate {
     func tableViewSelectionDidChange(_ notification: Notification) {
         let row = tableView.selectedRow
         guard row >= 0 else { return }
+        selectedRow = row
         onSelect?(row)
     }
 }

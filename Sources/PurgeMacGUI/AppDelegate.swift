@@ -18,7 +18,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMainMenu()
+        createMainWindow()
 
+        // Listen for language changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(languageDidChange),
+            name: .languageChanged,
+            object: nil
+        )
+
+        // Bring the app to the foreground when launched from a terminal.
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func createMainWindow() {
         let splitViewController = MainSplitViewController()
         let window = NSWindow(contentViewController: splitViewController)
         window.title = "PurgeMac"
@@ -27,9 +41,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.makeKeyAndOrderFront(nil)
         self.window = window
+    }
 
-        // Bring the app to the foreground when launched from a terminal.
-        NSApp.activate(ignoringOtherApps: true)
+    @objc private func languageDidChange() {
+        // Recreate main menu
+        setupMainMenu()
+        // Recreate main window
+        window?.close()
+        createMainWindow()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

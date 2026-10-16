@@ -8,6 +8,7 @@ final class MainSplitViewController: NSSplitViewController {
     private let sidebarViewController = SidebarViewController()
     private let uninstallViewController = UninstallViewController()
     private let cleanViewController = CleanViewController()
+    private var currentIndex: Int = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,6 +24,7 @@ final class MainSplitViewController: NSSplitViewController {
         addSplitViewItem(contentItem)
 
         sidebarViewController.onSelect = { [weak self] index in
+            self?.currentIndex = index
             self?.showContent(for: index)
         }
 
@@ -30,6 +32,14 @@ final class MainSplitViewController: NSSplitViewController {
         DispatchQueue.main.async { [weak self] in
             self?.sidebarViewController.selectRow(0)
         }
+
+        // Listen for language changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(languageDidChange),
+            name: .languageChanged,
+            object: nil
+        )
     }
 
     private func showContent(for index: Int) {
@@ -39,6 +49,17 @@ final class MainSplitViewController: NSSplitViewController {
             splitViewItems[1].viewController = uninstallViewController
         default:
             splitViewItems[1].viewController = cleanViewController
+        }
+    }
+
+    @objc private func languageDidChange() {
+        // Refresh sidebar
+        sidebarViewController.reloadData()
+        // Refresh current view controller
+        if currentIndex == 0 {
+            uninstallViewController.reloadData()
+        } else {
+            cleanViewController.reloadData()
         }
     }
 }

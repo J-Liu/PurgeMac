@@ -44,6 +44,25 @@ final class SettingsWindow: NSWindow {
         tabView = NSTabView(frame: contentView!.bounds.insetBy(dx: 10, dy: 10))
         tabView.autoresizingMask = [.width, .height]
 
+        recreateTabs()
+
+        contentView?.addSubview(tabView)
+
+        // Listen for language changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(languageDidChange),
+            name: .languageChanged,
+            object: nil
+        )
+    }
+
+    private func recreateTabs() {
+        // Remove existing tabs
+        while let tab = tabView.tabViewItems.first {
+            tabView.removeTabViewItem(tab)
+        }
+
         generalTab = createGeneralTab()
         let generalItem = NSTabViewItem(identifier: "general")
         generalItem.label = L("settings.tab.general")
@@ -56,7 +75,12 @@ final class SettingsWindow: NSWindow {
         aboutItem.view = aboutTab
         tabView.addTabViewItem(aboutItem)
 
-        contentView?.addSubview(tabView)
+        // Update window title
+        self.title = L("settings.title")
+    }
+
+    @objc private func languageDidChange() {
+        recreateTabs()
     }
 
     // MARK: - Layout Helpers

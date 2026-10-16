@@ -18,6 +18,28 @@ final class CleanViewController: NSViewController {
     private var currentCategory: JunkCategory?
     private var selectedIndexes: Set<Int> = []
 
+    func reloadData() {
+        // Update column titles
+        if let nameColumn = categoryTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("name")) {
+            nameColumn.title = L("clean.column.category")
+        }
+        if let sizeColumn = categoryTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("size")) {
+            sizeColumn.title = L("clean.column.size")
+        }
+        if let itemColumn = itemTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("item")) {
+            itemColumn.title = L("clean.column.items")
+        }
+        // Update button title
+        cleanButton.title = L("clean.button.clean")
+        // Refresh status if not scanned
+        if currentCategory == nil {
+            statusLabel.stringValue = L("clean.status.initial")
+        }
+        // Reload tables
+        categoryTableView.reloadData()
+        itemTableView.reloadData()
+    }
+
     override func loadView() {
         let root = NSView()
 
@@ -66,6 +88,14 @@ final class CleanViewController: NSViewController {
         cleanButton.bezelStyle = .rounded
         cleanButton.isEnabled = false
 
+        // Listen for language changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(languageDidChange),
+            name: .languageChanged,
+            object: nil
+        )
+
         for subview in [categoryScroll, itemScroll, statusLabel, cleanButton] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(subview)
@@ -92,6 +122,10 @@ final class CleanViewController: NSViewController {
         ])
 
         view = root
+    }
+
+    @objc private func languageDidChange() {
+        reloadData()
     }
 
     // MARK: - Scanning

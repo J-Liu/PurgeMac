@@ -3,6 +3,10 @@
 
 import Foundation
 
+extension Notification.Name {
+    static let languageChanged = Notification.Name("languageChanged")
+}
+
 /// Supported languages for the app
 enum AppLanguage: String, CaseIterable {
     case system = "system"
@@ -13,26 +17,13 @@ enum AppLanguage: String, CaseIterable {
     var displayName: String {
         switch self {
         case .system:
-            return NSLocalizedString("settings.language.system", comment: "")
+            return localizedStrings[.english]?["settings.language.system"] ?? "System Default"
         case .english:
-            return NSLocalizedString("settings.language.english", comment: "")
+            return localizedStrings[.english]?["settings.language.english"] ?? "English"
         case .simplifiedChinese:
-            return NSLocalizedString("settings.language.simplifiedChinese", comment: "")
+            return localizedStrings[.simplifiedChinese]?["settings.language.simplifiedChinese"] ?? "简体中文"
         case .traditionalChinese:
-            return NSLocalizedString("settings.language.traditionalChinese", comment: "")
-        }
-    }
-
-    var localeIdentifier: String? {
-        switch self {
-        case .system:
-            return nil
-        case .english:
-            return "en"
-        case .simplifiedChinese:
-            return "zh-Hans"
-        case .traditionalChinese:
-            return "zh-Hant"
+            return localizedStrings[.traditionalChinese]?["settings.language.traditionalChinese"] ?? "繁體中文"
         }
     }
 }
@@ -42,7 +33,6 @@ final class LocalizationManager {
     static let shared = LocalizationManager()
 
     private let languageKey = "appLanguage"
-    private var currentBundle: Bundle = .main
 
     var currentLanguage: AppLanguage {
         get {
@@ -54,31 +44,31 @@ final class LocalizationManager {
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: languageKey)
-            updateBundle(for: newValue)
+            // Post notification for UI updates
+            NotificationCenter.default.post(name: .languageChanged, object: nil)
         }
     }
 
-    private init() {
-        updateBundle(for: currentLanguage)
-    }
-
-    private func updateBundle(for language: AppLanguage) {
-        guard let identifier = language.localeIdentifier,
-              let path = Bundle.main.path(forResource: identifier, ofType: "lproj"),
-              let bundle = Bundle(path: path) else {
-            currentBundle = .main
-            return
-        }
-        currentBundle = bundle
-    }
+    private init() {}
 
     func localizedString(_ key: String) -> String {
-        return currentBundle.localizedString(forKey: key, value: nil, table: nil)
+        let language = currentLanguage == .system ? systemLanguage() : currentLanguage
+        return localizedStrings[language]?[key] ?? key
     }
 
     func localizedString(_ key: String, _ arguments: CVarArg...) -> String {
         let format = localizedString(key)
         return String(format: format, arguments: arguments)
+    }
+
+    private func systemLanguage() -> AppLanguage {
+        let preferred = Locale.preferredLanguages.first ?? "en"
+        if preferred.hasPrefix("zh-Hans") || preferred.hasPrefix("zh-CN") {
+            return .simplifiedChinese
+        } else if preferred.hasPrefix("zh-Hant") || preferred.hasPrefix("zh-TW") || preferred.hasPrefix("zh-HK") {
+            return .traditionalChinese
+        }
+        return .english
     }
 }
 
@@ -90,3 +80,238 @@ func L(_ key: String) -> String {
 func L(_ key: String, _ arguments: CVarArg...) -> String {
     return LocalizationManager.shared.localizedString(key, arguments)
 }
+
+// MARK: - Localized Strings Dictionary
+
+private let localizedStrings: [AppLanguage: [String: String]] = [
+    .english: [
+        // Settings
+        "settings.title": "Settings",
+        "settings.tab.general": "General",
+        "settings.tab.about": "About",
+        "settings.language": "Language:",
+        "settings.language.system": "System Default",
+        "settings.language.english": "English",
+        "settings.language.simplifiedChinese": "Simplified Chinese",
+        "settings.language.traditionalChinese": "Traditional Chinese",
+        "settings.about.version": "Version",
+        "settings.about.copyright": "Copyright © 2026 Jia Liu",
+
+        // Sidebar
+        "sidebar.uninstall": "Uninstall App",
+        "sidebar.cleanup": "Clean Junk",
+
+        // Uninstall View
+        "uninstall.search.placeholder": "Search by name or bundle ID",
+        "uninstall.column.icon": "Icon",
+        "uninstall.column.name": "Name",
+        "uninstall.column.version": "Version",
+        "uninstall.column.bundleID": "Bundle ID",
+        "uninstall.leftover.title": "Leftovers (unchecked by default)",
+        "uninstall.select.prompt": "Select an app to inspect its leftovers.",
+        "uninstall.leftover.none": "No leftovers found.",
+        "uninstall.leftover.count": "%d leftover item(s) found.",
+        "uninstall.button.uninstall": "Uninstall",
+        "uninstall.alert.noApp.title": "No app selected",
+        "uninstall.alert.noApp.message": "Select an application in the list first.",
+        "uninstall.alert.confirm.title": "Uninstall %@?",
+        "uninstall.alert.confirm.message": "The application will be moved to the Trash.",
+        "uninstall.alert.confirm.message.withLeftovers": "The application will be moved to the Trash.\n\n%d leftover item(s) will also be moved to the Trash.",
+        "uninstall.alert.confirm.uninstall": "Uninstall",
+        "uninstall.alert.confirm.cancel": "Cancel",
+        "uninstall.result.moved": "Moved to Trash: %@",
+        "uninstall.result.freed": "Freed %@",
+        "uninstall.result.partial": "%d leftover item(s) could not be removed.",
+        "uninstall.alert.failed.title": "Uninstall failed",
+        "uninstall.alert.ok": "OK",
+
+        // Clean View
+        "clean.status.initial": "Click Scan next to a category to inspect it.",
+        "clean.column.category": "Category",
+        "clean.column.size": "Eligible Space",
+        "clean.column.action": "",
+        "clean.column.items": "Items",
+        "clean.button.scan": "Scan",
+        "clean.button.clean": "Clean",
+        "clean.status.scanning": "Scanning %@...",
+        "clean.status.found": "%d item(s) found for %@.",
+        "clean.status.largeFiles": "%d large file(s) found (list-only).",
+        "clean.status.freed": "Freed %@.",
+        "clean.alert.noSelection.title": "No items selected",
+        "clean.alert.noSelection.message": "Check the items you want to clean first.",
+        "clean.alert.confirm.title": "Clean %d item(s)?",
+        "clean.alert.confirm.message": "Selected items will be moved to the Trash.",
+        "clean.alert.confirm.clean": "Clean",
+        "clean.button.moveToTrash": "Move to Trash",
+        "clean.alert.move.title": "Move this file to the Trash?",
+
+        // Junk Categories
+        "junk.userCaches": "User Caches",
+        "junk.logs": "Logs",
+        "junk.browserCaches": "Browser Caches",
+        "junk.developerCaches": "Developer Caches",
+        "junk.largeFiles": "Large Files",
+        "junk.trash": "Trash",
+        "junk.notScanned": "Not scanned",
+
+        // Main Menu
+        "menu.about": "About %@",
+        "menu.checkForUpdates": "Check for Updates...",
+        "menu.quit": "Quit %@",
+        "menu.preferences": "Preferences...",
+    ],
+
+    .simplifiedChinese: [
+        // Settings
+        "settings.title": "设置",
+        "settings.tab.general": "通用",
+        "settings.tab.about": "关于",
+        "settings.language": "语言：",
+        "settings.language.system": "系统默认",
+        "settings.language.english": "English",
+        "settings.language.simplifiedChinese": "简体中文",
+        "settings.language.traditionalChinese": "繁體中文",
+        "settings.about.version": "版本",
+        "settings.about.copyright": "版权所有 © 2026 Jia Liu",
+
+        // Sidebar
+        "sidebar.uninstall": "卸载应用",
+        "sidebar.cleanup": "清理垃圾",
+
+        // Uninstall View
+        "uninstall.search.placeholder": "按名称或 Bundle ID 搜索",
+        "uninstall.column.icon": "图标",
+        "uninstall.column.name": "名称",
+        "uninstall.column.version": "版本",
+        "uninstall.column.bundleID": "Bundle ID",
+        "uninstall.leftover.title": "残留文件（默认未选中）",
+        "uninstall.select.prompt": "选择一个应用以查看其残留文件。",
+        "uninstall.leftover.none": "未找到残留文件。",
+        "uninstall.leftover.count": "找到 %d 个残留文件。",
+        "uninstall.button.uninstall": "卸载",
+        "uninstall.alert.noApp.title": "未选择应用",
+        "uninstall.alert.noApp.message": "请先从列表中选择一个应用。",
+        "uninstall.alert.confirm.title": "卸载 %@？",
+        "uninstall.alert.confirm.message": "该应用将被移至废纸篓。",
+        "uninstall.alert.confirm.message.withLeftovers": "该应用将被移至废纸篓。\n\n%d 个残留文件也将被移至废纸篓。",
+        "uninstall.alert.confirm.uninstall": "卸载",
+        "uninstall.alert.confirm.cancel": "取消",
+        "uninstall.result.moved": "已移至废纸篓：%@",
+        "uninstall.result.freed": "释放了 %@",
+        "uninstall.result.partial": "%d 个残留文件无法删除。",
+        "uninstall.alert.failed.title": "卸载失败",
+        "uninstall.alert.ok": "确定",
+
+        // Clean View
+        "clean.status.initial": "点击类别旁的扫描按钮进行检查。",
+        "clean.column.category": "类别",
+        "clean.column.size": "可释放空间",
+        "clean.column.action": "",
+        "clean.column.items": "项目",
+        "clean.button.scan": "扫描",
+        "clean.button.clean": "清理",
+        "clean.status.scanning": "正在扫描 %@...",
+        "clean.status.found": "在 %@ 中找到 %d 个项目。",
+        "clean.status.largeFiles": "找到 %d 个大文件（仅列出）。",
+        "clean.status.freed": "释放了 %@。",
+        "clean.alert.noSelection.title": "未选择项目",
+        "clean.alert.noSelection.message": "请先勾选要清理的项目。",
+        "clean.alert.confirm.title": "清理 %d 个项目？",
+        "clean.alert.confirm.message": "选中的项目将被移至废纸篓。",
+        "clean.alert.confirm.clean": "清理",
+        "clean.button.moveToTrash": "移至废纸篓",
+        "clean.alert.move.title": "将此文件移至废纸篓？",
+
+        // Junk Categories
+        "junk.userCaches": "用户缓存",
+        "junk.logs": "日志文件",
+        "junk.browserCaches": "浏览器缓存",
+        "junk.developerCaches": "开发者缓存",
+        "junk.largeFiles": "大文件",
+        "junk.trash": "废纸篓",
+        "junk.notScanned": "未扫描",
+
+        // Main Menu
+        "menu.about": "关于 %@",
+        "menu.checkForUpdates": "检查更新...",
+        "menu.quit": "退出 %@",
+        "menu.preferences": "偏好设置...",
+    ],
+
+    .traditionalChinese: [
+        // Settings
+        "settings.title": "設定",
+        "settings.tab.general": "一般",
+        "settings.tab.about": "關於",
+        "settings.language": "語言：",
+        "settings.language.system": "系統預設",
+        "settings.language.english": "English",
+        "settings.language.simplifiedChinese": "简体中文",
+        "settings.language.traditionalChinese": "繁體中文",
+        "settings.about.version": "版本",
+        "settings.about.copyright": "版權所有 © 2026 Jia Liu",
+
+        // Sidebar
+        "sidebar.uninstall": "卸載應用程式",
+        "sidebar.cleanup": "清理垃圾",
+
+        // Uninstall View
+        "uninstall.search.placeholder": "按名稱或 Bundle ID 搜尋",
+        "uninstall.column.icon": "圖示",
+        "uninstall.column.name": "名稱",
+        "uninstall.column.version": "版本",
+        "uninstall.column.bundleID": "Bundle ID",
+        "uninstall.leftover.title": "殘留檔案（預設未選取）",
+        "uninstall.select.prompt": "選擇一個應用程式以查看其殘留檔案。",
+        "uninstall.leftover.none": "未找到殘留檔案。",
+        "uninstall.leftover.count": "找到 %d 個殘留檔案。",
+        "uninstall.button.uninstall": "卸載",
+        "uninstall.alert.noApp.title": "未選擇應用程式",
+        "uninstall.alert.noApp.message": "請先從列表中選擇一個應用程式。",
+        "uninstall.alert.confirm.title": "卸載 %@？",
+        "uninstall.alert.confirm.message": "該應用程式將被移至垃圾桶。",
+        "uninstall.alert.confirm.message.withLeftovers": "該應用程式將被移至垃圾桶。\n\n%d 個殘留檔案也將被移至垃圾桶。",
+        "uninstall.alert.confirm.uninstall": "卸載",
+        "uninstall.alert.confirm.cancel": "取消",
+        "uninstall.result.moved": "已移至垃圾桶：%@",
+        "uninstall.result.freed": "釋放了 %@",
+        "uninstall.result.partial": "%d 個殘留檔案無法刪除。",
+        "uninstall.alert.failed.title": "卸載失敗",
+        "uninstall.alert.ok": "確定",
+
+        // Clean View
+        "clean.status.initial": "點擊類別旁的掃描按進行查。",
+        "clean.column.category": "類別",
+        "clean.column.size": "可釋放空間",
+        "clean.column.action": "",
+        "clean.column.items": "項目",
+        "clean.button.scan": "掃描",
+        "clean.button.clean": "清理",
+        "clean.status.scanning": "正在掃描 %@...",
+        "clean.status.found": "在 %@ 中找到 %d 個項目。",
+        "clean.status.largeFiles": "找到 %d 個大檔案（僅列出）。",
+        "clean.status.freed": "釋放了 %@。",
+        "clean.alert.noSelection.title": "未選取項目",
+        "clean.alert.noSelection.message": "請先勾選要清理的項目。",
+        "clean.alert.confirm.title": "清理 %d 個項目？",
+        "clean.alert.confirm.message": "選取的項目將被移至垃圾桶。",
+        "clean.alert.confirm.clean": "清理",
+        "clean.button.moveToTrash": "移至垃圾桶",
+        "clean.alert.move.title": "將此檔案移至垃圾桶？",
+
+        // Junk Categories
+        "junk.userCaches": "使用者快取",
+        "junk.logs": "日誌檔案",
+        "junk.browserCaches": "瀏覽器快取",
+        "junk.developerCaches": "開發者快取",
+        "junk.largeFiles": "大檔案",
+        "junk.trash": "垃圾桶",
+        "junk.notScanned": "未掃描",
+
+        // Main Menu
+        "menu.about": "關於 %@",
+        "menu.checkForUpdates": "檢查更新...",
+        "menu.quit": "結束 %@",
+        "menu.preferences": "偏好設定...",
+    ]
+]
