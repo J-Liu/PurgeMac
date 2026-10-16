@@ -31,6 +31,6 @@
 	<key>SUFeedURL</key>
 	<string>https://example.com/purgemac/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>PLACEHOLDER_SPARKLE_PUBLIC_ED_KEY</string>
+    <string>j8Tzt/L6NLPUrw5vagzFhwAlCvin1fjYYuor3sfxATw=</string>
 </dict>
 </plist>

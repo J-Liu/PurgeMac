@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <path d="M 512 200
+           L 760 300
+           L 760 540
+           Q 760 720 512 840
+           Q 264 720 264 540
+           L 264 300
+           Z"
+        fill="#FFFFFF"/>
+
+  <path d="M 512 240
+           L 720 324
+           L 720 540
+           Q 720 690 512 794
+           Q 304 690 304 540
+           L 304 324
+           Z"
+        fill="none"
+        stroke="#FF6B00"
+        stroke-width="10"/>
+
+  <path d="M 512 380
+           L 542 470
+           L 636 470
+           L 560 525
+           L 590 615
+           L 512 560
+           L 434 615
+           L 464 525
+           L 388 470
+           L 482 470
+           Z"
+        fill="#FF6B00"/>
+</svg>
