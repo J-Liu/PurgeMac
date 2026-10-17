@@ -75,37 +75,104 @@ struct ScanLocations {
 
     /// Core locations to scan for app leftovers
     static var paths: [String] {
-        [
+        let (cacheDir, tempDir) = darwinCT()
+
+        var paths: [String] = [
+            // User home - scoped subdirs (bare $HOME intentionally NOT scanned)
             "\(home)/.config",
             "\(home)/Documents",
             "\(home)/Desktop",
             "\(home)/Applications",
+            // User Library
             "\(home)/Library",
             "\(home)/Library/Application Scripts",
             "\(home)/Library/Application Support",
+            "\(home)/Library/Application Support/CrashReporter",
+            "\(home)/Library/Application Support/com.apple.sharedfilelist/com.apple.LSSharedFileList.ApplicationRecentDocuments",
             "\(home)/Library/Containers",
             "\(home)/Library/Caches",
+            "\(home)/Library/Caches/com.apple.helpd/Generated",
+            "\(home)/Library/Caches/com.crashlytics",
+            "\(home)/Library/Caches/com.google.SoftwareUpdate",
+            "\(home)/Library/Caches/com.google.Keystone",
+            "\(home)/Library/Caches/org.sparkle-project.Sparkle",
+            "\(home)/Library/Caches/com.segment.analytics",
+            "\(home)/Library/Caches/SentryCrash",
+            "\(home)/Library/Caches/Rollbar",
+            "\(home)/Library/Caches/Amplitude",
+            "\(home)/Library/Caches/Realm",
+            "\(home)/Library/Caches/Parse",
             "\(home)/Library/Group Containers",
             "\(home)/Library/HTTPStorages",
             "\(home)/Library/Internet Plug-Ins",
             "\(home)/Library/LaunchAgents",
             "\(home)/Library/Logs",
+            "\(home)/Library/Logs/DiagnosticReports",
             "\(home)/Library/Preferences",
             "\(home)/Library/PreferencePanes",
+            "\(home)/Library/Preferences/ByHost",
             "\(home)/Library/Saved Application State",
             "\(home)/Library/Services",
             "\(home)/Library/WebKit",
+            // System-wide
             "/Applications",
             "/Users/Shared",
+            "/Users/Shared/Library/Application Support",
+            "/Library",
             "/Library/Application Support",
+            "/Library/Application Support/CrashReporter",
             "/Library/Caches",
+            "/Library/Extensions",
             "/Library/Internet Plug-Ins",
             "/Library/LaunchAgents",
             "/Library/LaunchDaemons",
             "/Library/Logs",
+            "/Library/Logs/DiagnosticReports",
             "/Library/Preferences",
             "/Library/PrivilegedHelperTools",
+            "/private/var/db/receipts",
+            "/private/tmp",
+            "/usr/local/bin",
+            "/usr/local/etc",
+            "/usr/local/opt",
+            "/usr/local/sbin",
+            "/usr/local/share",
+            "/usr/local/var",
+            cacheDir,
+            tempDir
         ]
+
+        // Dynamically append Application Support subfolders for deeper search
+        let subfolders = listAppSupportDirectories()
+        for folder in subfolders {
+            paths.append("\(home)/Library/Application Support/\(folder)")
+        }
+
+        return paths
+    }
+
+    static func darwinCT() -> (String, String) {
+        var cacheDir = ""
+        var tempDir = ""
+        if let cfCacheDir = NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true).first {
+            cacheDir = cfCacheDir
+        }
+        if let cfTempDir = ProcessInfo.processInfo.environment["TMPDIR"] {
+            tempDir = cfTempDir
+        }
+        return (cacheDir, tempDir)
+    }
+
+    static func listAppSupportDirectories() -> [String] {
+        let appSupportPath = "\(home)/Library/Application Support"
+        guard let contents = try? FileManager.default.contentsOfDirectory(atPath: appSupportPath) else {
+            return []
+        }
+        return contents.filter { item in
+            var isDir: ObjCBool = false
+            let fullPath = (appSupportPath as NSString).appendingPathComponent(item)
+            return FileManager.default.fileExists(atPath: fullPath, isDirectory: &isDir) && isDir.boolValue
+        }
     }
 
     /// Directories to skip during deep search

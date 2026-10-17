@@ -15,7 +15,9 @@ final class UninstallViewController: NSViewController {
     private let uninstallButton = NSButton(title: L("uninstall.button.uninstall"), target: nil, action: nil)
     private let selectAllCheckbox = NSButton(checkboxWithTitle: L("uninstall.selectAll"), target: nil, action: nil)
     private let appProgressIndicator = NSProgressIndicator()
+    private let appLoadingOverlay = NSView()
     private let leftoverProgressIndicator = NSProgressIndicator()
+    private let leftoverLoadingOverlay = NSView()
 
     private var apps: [InstalledApp] = []
     private var filteredApps: [InstalledApp] = []
@@ -53,10 +55,17 @@ final class UninstallViewController: NSViewController {
         appScroll.hasVerticalScroller = true
         appScroll.hasHorizontalScroller = true
 
-        // App loading progress indicator
+        // App loading overlay with semi-transparent background
+        appLoadingOverlay.wantsLayer = true
+        appLoadingOverlay.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.7).cgColor
+        appLoadingOverlay.isHidden = true
+        appLoadingOverlay.translatesAutoresizingMaskIntoConstraints = false
+
+        // Progress indicator inside overlay
         appProgressIndicator.style = .spinning
-        appProgressIndicator.controlSize = .small
+        appProgressIndicator.controlSize = .regular
         appProgressIndicator.translatesAutoresizingMaskIntoConstraints = false
+        appLoadingOverlay.addSubview(appProgressIndicator)
 
         leftoverTableView.delegate = self
         leftoverTableView.dataSource = self
@@ -71,10 +80,17 @@ final class UninstallViewController: NSViewController {
         leftoverScroll.documentView = leftoverTableView
         leftoverScroll.hasVerticalScroller = true
 
-        // Leftover loading progress indicator
+        // Leftover loading overlay with semi-transparent background
+        leftoverLoadingOverlay.wantsLayer = true
+        leftoverLoadingOverlay.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.7).cgColor
+        leftoverLoadingOverlay.isHidden = true
+        leftoverLoadingOverlay.translatesAutoresizingMaskIntoConstraints = false
+
+        // Progress indicator inside overlay
         leftoverProgressIndicator.style = .spinning
-        leftoverProgressIndicator.controlSize = .small
+        leftoverProgressIndicator.controlSize = .regular
         leftoverProgressIndicator.translatesAutoresizingMaskIntoConstraints = false
+        leftoverLoadingOverlay.addSubview(leftoverProgressIndicator)
 
         // Select All checkbox for leftovers
         selectAllCheckbox.target = self
@@ -98,8 +114,9 @@ final class UninstallViewController: NSViewController {
         uninstallButton.action = #selector(uninstallClicked)
         uninstallButton.bezelStyle = .rounded
         uninstallButton.isHidden = true
+        setUninstallButtonTitle()
 
-        for subview in [detailLabel, selectAllCheckbox, leftoverProgressIndicator, leftoverScroll, statusLabel, uninstallButton] {
+        for subview in [detailLabel, selectAllCheckbox, leftoverScroll, leftoverLoadingOverlay, statusLabel, uninstallButton] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             detailPanel.addSubview(subview)
         }
@@ -112,26 +129,32 @@ final class UninstallViewController: NSViewController {
             selectAllCheckbox.topAnchor.constraint(equalTo: detailLabel.bottomAnchor, constant: 8),
             selectAllCheckbox.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
 
-            leftoverProgressIndicator.centerXAnchor.constraint(equalTo: leftoverScroll.centerXAnchor),
-            leftoverProgressIndicator.centerYAnchor.constraint(equalTo: leftoverScroll.centerYAnchor),
+            uninstallButton.centerYAnchor.constraint(equalTo: selectAllCheckbox.centerYAnchor),
+            uninstallButton.leadingAnchor.constraint(equalTo: selectAllCheckbox.trailingAnchor, constant: 12),
+            uninstallButton.widthAnchor.constraint(equalToConstant: 96),
 
-            leftoverScroll.topAnchor.constraint(equalTo: selectAllCheckbox.bottomAnchor, constant: 4),
+            leftoverScroll.topAnchor.constraint(equalTo: selectAllCheckbox.bottomAnchor, constant: 8),
             leftoverScroll.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
             leftoverScroll.trailingAnchor.constraint(equalTo: detailPanel.trailingAnchor, constant: -12),
             leftoverScroll.bottomAnchor.constraint(equalTo: statusLabel.topAnchor, constant: -12),
 
-            statusLabel.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
-            statusLabel.bottomAnchor.constraint(equalTo: detailPanel.bottomAnchor, constant: -12),
+            leftoverLoadingOverlay.topAnchor.constraint(equalTo: leftoverScroll.topAnchor),
+            leftoverLoadingOverlay.leadingAnchor.constraint(equalTo: leftoverScroll.leadingAnchor),
+            leftoverLoadingOverlay.trailingAnchor.constraint(equalTo: leftoverScroll.trailingAnchor),
+            leftoverLoadingOverlay.bottomAnchor.constraint(equalTo: leftoverScroll.bottomAnchor),
 
-            uninstallButton.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
-            uninstallButton.bottomAnchor.constraint(equalTo: detailPanel.bottomAnchor, constant: -12),
-            uninstallButton.widthAnchor.constraint(equalToConstant: 96),
+            leftoverProgressIndicator.centerXAnchor.constraint(equalTo: leftoverLoadingOverlay.centerXAnchor),
+            leftoverProgressIndicator.centerYAnchor.constraint(equalTo: leftoverLoadingOverlay.centerYAnchor),
+
+            statusLabel.leadingAnchor.constraint(equalTo: detailPanel.leadingAnchor, constant: 12),
+            statusLabel.trailingAnchor.constraint(equalTo: detailPanel.trailingAnchor, constant: -12),
+            statusLabel.bottomAnchor.constraint(equalTo: detailPanel.bottomAnchor, constant: -12),
         ])
 
         searchField.delegate = self
         searchField.placeholderString = L("uninstall.search.placeholder")
 
-        for subview in [searchField, appProgressIndicator, appScroll, detailPanel] {
+        for subview in [searchField, appScroll, appLoadingOverlay, detailPanel] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(subview)
         }
@@ -142,13 +165,18 @@ final class UninstallViewController: NSViewController {
             searchField.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
             searchField.heightAnchor.constraint(equalToConstant: 30),
 
-            appProgressIndicator.centerXAnchor.constraint(equalTo: appScroll.centerXAnchor),
-            appProgressIndicator.centerYAnchor.constraint(equalTo: appScroll.centerYAnchor),
-
             appScroll.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 12),
             appScroll.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
             appScroll.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
             appScroll.bottomAnchor.constraint(equalTo: detailPanel.topAnchor, constant: -12),
+
+            appLoadingOverlay.topAnchor.constraint(equalTo: appScroll.topAnchor),
+            appLoadingOverlay.leadingAnchor.constraint(equalTo: appScroll.leadingAnchor),
+            appLoadingOverlay.trailingAnchor.constraint(equalTo: appScroll.trailingAnchor),
+            appLoadingOverlay.bottomAnchor.constraint(equalTo: appScroll.bottomAnchor),
+
+            appProgressIndicator.centerXAnchor.constraint(equalTo: appLoadingOverlay.centerXAnchor),
+            appProgressIndicator.centerYAnchor.constraint(equalTo: appLoadingOverlay.centerYAnchor),
 
             detailPanel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
             detailPanel.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
@@ -196,8 +224,10 @@ final class UninstallViewController: NSViewController {
             leftoverColumn.title = L("uninstall.leftover.title")
         }
         // Update button title
-        uninstallButton.title = L("uninstall.button.uninstall")
+        setUninstallButtonTitle()
         selectAllCheckbox.title = L("uninstall.selectAll")
+        // Ensure button visibility is correct
+        updateUninstallButtonVisibility()
         // Refresh detail label if no app selected
         if selectedApp == nil && !isLoadingLeftovers {
             detailLabel.stringValue = L("uninstall.select.prompt")
@@ -211,8 +241,9 @@ final class UninstallViewController: NSViewController {
 
     private func refreshAppsAsync() {
         isLoadingApps = true
+        appLoadingOverlay.isHidden = false
         appProgressIndicator.startAnimation(nil)
-        appTableView.isHidden = true
+        appTableView.isHidden = false
         apps = []
         filteredApps = []
         appTableView.reloadData()
@@ -222,7 +253,7 @@ final class UninstallViewController: NSViewController {
             DispatchQueue.main.async {
                 self?.isLoadingApps = false
                 self?.appProgressIndicator.stopAnimation(nil)
-                self?.appTableView.isHidden = false
+                self?.appLoadingOverlay.isHidden = true
                 self?.apps = scannedApps
                 self?.filterApps()
             }
@@ -238,8 +269,9 @@ final class UninstallViewController: NSViewController {
 
         // Show loading state
         isLoadingLeftovers = true
+        leftoverLoadingOverlay.isHidden = false
         leftoverProgressIndicator.startAnimation(nil)
-        leftoverTableView.isHidden = true
+        leftoverTableView.isHidden = false
         selectAllCheckbox.isHidden = true
         uninstallButton.isHidden = true
         detailLabel.stringValue = "\(app.name) — v\(app.version)\n\(app.path)"
@@ -254,7 +286,7 @@ final class UninstallViewController: NSViewController {
                 guard let self = self, self.selectedApp?.bundleID == app.bundleID else { return }
                 self.isLoadingLeftovers = false
                 self.leftoverProgressIndicator.stopAnimation(nil)
-                self.leftoverTableView.isHidden = false
+                self.leftoverLoadingOverlay.isHidden = true
                 self.leftovers = scannedLeftovers
                 self.statusLabel.stringValue = scannedLeftovers.isEmpty
                     ? L("uninstall.leftover.none")
@@ -395,9 +427,17 @@ final class UninstallViewController: NSViewController {
         }
     }
 
+    private func setUninstallButtonTitle() {
+        let title = L("uninstall.button.uninstall")
+        let attrs: [NSAttributedString.Key: Any] = [
+            .foregroundColor: NSColor.systemRed
+        ]
+        uninstallButton.attributedTitle = NSAttributedString(string: title, attributes: attrs)
+    }
+
     private func updateUninstallButtonVisibility() {
-        // Show uninstall button only when an app is selected
-        uninstallButton.isHidden = selectedApp == nil
+        // Show uninstall button only when at least one related file is selected
+        uninstallButton.isHidden = selectedLeftoverIndexes.isEmpty
     }
 
     private static func formatBytes(_ bytes: Int64) -> String {
