@@ -288,6 +288,9 @@ final class UninstallViewController: NSViewController {
                 self.leftoverProgressIndicator.stopAnimation(nil)
                 self.leftoverLoadingOverlay.isHidden = true
                 self.leftovers = scannedLeftovers
+                let totalSize = LeftoverScanner.totalSize(of: scannedLeftovers)
+                let sizeStr = Self.formatBytes(totalSize)
+                self.detailLabel.stringValue = "\(app.name) — v\(app.version)\n\(app.path) — \(sizeStr)"
                 self.statusLabel.stringValue = scannedLeftovers.isEmpty
                     ? L("uninstall.leftover.none")
                     : L("uninstall.leftover.count", scannedLeftovers.count)

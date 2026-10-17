@@ -98,8 +98,12 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.about.copyright": "Copyright © 2026 Jia Liu",
 
         // Sidebar
-        "sidebar.uninstall": "Uninstall App",
+        "sidebar.uninstall": "Uninstaller",
         "sidebar.cleanup": "Clean Junk",
+        "sidebar.clean.caches": "System Caches",
+        "sidebar.clean.logs": "Logs & Errors",
+        "sidebar.clean.leftovers": "App Leftovers",
+        "sidebar.clean.largeFiles": "Large Files",
 
         // Uninstall View
         "uninstall.search.placeholder": "Search by name or bundle ID",
@@ -178,8 +182,12 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.about.copyright": "版权所有 © 2026 Jia Liu",
 
         // Sidebar
-        "sidebar.uninstall": "卸载应用",
+        "sidebar.uninstall": "卸载器",
         "sidebar.cleanup": "清理垃圾",
+        "sidebar.clean.caches": "系统缓存",
+        "sidebar.clean.logs": "日志和错误信息",
+        "sidebar.clean.leftovers": "应用残留",
+        "sidebar.clean.largeFiles": "大文件",
 
         // Uninstall View
         "uninstall.search.placeholder": "按名称或 Bundle ID 搜索",
@@ -258,8 +266,12 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.about.copyright": "版權所有 © 2026 Jia Liu",
 
         // Sidebar
-        "sidebar.uninstall": "卸載應用程式",
+        "sidebar.uninstall": "卸載器",
         "sidebar.cleanup": "清理垃圾",
+        "sidebar.clean.caches": "系統快取",
+        "sidebar.clean.logs": "日誌和錯誤資訊",
+        "sidebar.clean.leftovers": "應用程式殘留",
+        "sidebar.clean.largeFiles": "大檔案",
 
         // Uninstall View
         "uninstall.search.placeholder": "按名稱或 Bundle ID 搜尋",
