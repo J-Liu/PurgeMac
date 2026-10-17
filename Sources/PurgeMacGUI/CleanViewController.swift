@@ -17,6 +17,52 @@ final class CleanViewController: NSViewController {
     private var scannedCategories: Set<JunkCategory> = []
     private var currentCategory: JunkCategory?
     private var selectedIndexes: Set<Int> = []
+    private var currentMode: String = "cleanup"  // cleanup, clean.caches, clean.logs, clean.leftovers, clean.largeFiles
+
+    /// Sets the cleanup mode based on sidebar selection.
+    func setMode(_ identifier: String) {
+        currentMode = identifier
+        // Reset state when mode changes
+        currentCategory = nil
+        selectedIndexes = []
+        itemTableView.reloadData()
+        cleanButton.isEnabled = false
+
+        // Auto-scan if it's a specific category
+        switch identifier {
+        case "clean.caches":
+            autoScanCategory(.userCaches)
+        case "clean.logs":
+            autoScanCategory(.logs)
+        case "clean.leftovers":
+            // App leftovers is not yet implemented as a category, show placeholder
+            statusLabel.stringValue = "App Leftovers - Coming Soon"
+        case "clean.largeFiles":
+            autoScanCategory(.largeFiles)
+        default:
+            break
+        }
+    }
+
+    private func autoScanCategory(_ category: JunkCategory) {
+        statusLabel.stringValue = L("clean.status.scanning", category.localizedDisplayName)
+        let scanner = self.scanner
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let items = scanner.scan(category: category)
+            DispatchQueue.main.async {
+                self?.itemsByCategory[category] = items
+                self?.scannedCategories.insert(category)
+                self?.currentCategory = category
+                self?.selectedIndexes = []
+                self?.categoryTableView.reloadData()
+                self?.refreshItems(for: category)
+                self?.statusLabel.stringValue = category == .largeFiles
+                    ? L("clean.status.largeFiles", items.count)
+                    : L("clean.status.found", items.count, category.localizedDisplayName)
+            }
+        }
+    }
 
     func reloadData() {
         // Update column titles
@@ -242,7 +288,13 @@ final class CleanViewController: NSViewController {
 extension CleanViewController: NSTableViewDataSource, NSTableViewDelegate {
     func numberOfRows(in tableView: NSTableView) -> Int {
         if tableView === categoryTableView {
-            return JunkCategory.allCases.count
+            // If in a specific sub-mode, hide the category list
+            switch currentMode {
+            case "clean.caches", "clean.logs", "clean.leftovers", "clean.largeFiles":
+                return 0
+            default:
+                return JunkCategory.allCases.count
+            }
         }
         guard let category = currentCategory else { return 0 }
         return itemsByCategory[category]?.count ?? 0

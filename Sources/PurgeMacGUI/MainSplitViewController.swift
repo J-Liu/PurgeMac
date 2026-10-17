@@ -8,7 +8,7 @@ final class MainSplitViewController: NSSplitViewController {
     private let sidebarViewController = SidebarViewController()
     private let uninstallViewController = UninstallViewController()
     private let cleanViewController = CleanViewController()
-    private var currentIndex: Int = 0
+    private var currentIdentifier: String = "uninstall"
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,14 +23,14 @@ final class MainSplitViewController: NSSplitViewController {
         contentItem.minimumThickness = 500
         addSplitViewItem(contentItem)
 
-        sidebarViewController.onSelect = { [weak self] index in
-            self?.currentIndex = index
-            self?.showContent(for: index)
+        sidebarViewController.onSelect = { [weak self] identifier in
+            self?.currentIdentifier = identifier
+            self?.showContent(for: identifier)
         }
 
         // Select the first sidebar entry once the view is ready.
         DispatchQueue.main.async { [weak self] in
-            self?.sidebarViewController.selectRow(0)
+            self?.sidebarViewController.selectIdentifier("uninstall")
         }
 
         // Listen for language changes
@@ -42,13 +42,15 @@ final class MainSplitViewController: NSSplitViewController {
         )
     }
 
-    private func showContent(for index: Int) {
+    private func showContent(for identifier: String) {
         guard splitViewItems.count > 1 else { return }
-        switch index {
-        case 0:
+        switch identifier {
+        case "uninstall":
             splitViewItems[1].viewController = uninstallViewController
         default:
+            // All clean sub-pages use CleanViewController with different modes
             splitViewItems[1].viewController = cleanViewController
+            cleanViewController.setMode(identifier)
         }
     }
 
@@ -56,7 +58,7 @@ final class MainSplitViewController: NSSplitViewController {
         // Refresh sidebar
         sidebarViewController.reloadData()
         // Refresh current view controller
-        if currentIndex == 0 {
+        if currentIdentifier == "uninstall" {
             uninstallViewController.reloadData()
         } else {
             cleanViewController.reloadData()
