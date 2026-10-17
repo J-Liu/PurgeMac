@@ -152,9 +152,10 @@ extension SidebarViewController: NSTableViewDataSource, NSTableViewDelegate {
                 if rootItems[i].identifier == entry.item.identifier {
                     rootItems[i].isExpanded.toggle()
                     flattenItems()
-                    tableView.reloadData()
-                    // Re-select the parent row
-                    tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+                    // Delay reload to avoid crash
+                    DispatchQueue.main.async { [weak self] in
+                        self?.tableView.reloadData()
+                    }
                     return
                 }
             }
