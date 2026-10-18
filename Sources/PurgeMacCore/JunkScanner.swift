@@ -8,7 +8,7 @@ import Foundation
 /// Categories differ in how they discover items:
 /// - caches and logs scan the top level of their Library directories,
 /// - browser and developer caches target a fixed set of known directories,
-/// - large files recursively walk Downloads and Desktop looking for big files,
+/// - large files recursively walk Downloads, Documents, and Desktop looking for big or old files,
 /// - trash lists the current contents of the Trash.
 public struct JunkScanner {
     /// The number of days an item must be untouched to be eligible for
@@ -18,9 +18,13 @@ public struct JunkScanner {
     /// Files larger than this many bytes are reported by the large-files scan.
     public let largeFileThreshold: Int64
 
-    public init(olderThanDays: Int = 30, largeFileThreshold: Int64 = 512 * 1024 * 1024) {
+    /// Files older than this many months (and >10MB) are also reported.
+    public let oldFileMonths: Int
+
+    public init(olderThanDays: Int = 30, largeFileThresholdMB: Int64 = 100, oldFileMonths: Int = 12) {
         self.olderThanDays = olderThanDays
-        self.largeFileThreshold = largeFileThreshold
+        self.largeFileThreshold = max(1, largeFileThresholdMB) * 1024 * 1024
+        self.oldFileMonths = oldFileMonths
     }
 
     /// Scans the given category and returns eligible junk, largest first.
@@ -113,38 +117,55 @@ public struct JunkScanner {
         return items.sorted { $0.size > $1.size }
     }
 
-    /// Recursively finds individual files above the configured size threshold.
+    /// Recursively finds individual files above the configured size threshold,
+    /// or files older than oldFileMonths that are larger than 10MB.
     private func scanLargeFiles() -> [JunkItem] {
         var items: [JunkItem] = []
+        let home = FileManager.default.homeDirectoryForCurrentUser
         let roots: [URL] = [
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads", isDirectory: true),
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Desktop", isDirectory: true),
+            home.appendingPathComponent("Downloads", isDirectory: true),
+            home.appendingPathComponent("Documents", isDirectory: true),
+            home.appendingPathComponent("Desktop", isDirectory: true),
         ]
+
+        let oldCutoff = Calendar.current.date(
+            byAdding: .month,
+            value: -max(1, oldFileMonths),
+            to: Date()
+        ) ?? Date.distantPast
+        let minOldFileSize: Int64 = 10 * 1024 * 1024  // 10 MB
 
         for root in roots {
             guard let enumerator = FileManager.default.enumerator(
                 at: root,
                 includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey],
-                options: [.skipsHiddenFiles],
+                options: [.skipsHiddenFiles, .skipsPackageDescendants],
                 errorHandler: nil
             ) else {
                 continue
             }
 
             for case let url as URL in enumerator {
-                let values = try? url.resourceValues(
+                guard let values = try? url.resourceValues(
                     forKeys: [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey]
-                )
-                guard values?.isRegularFile == true else { continue }
-                let size = Int64(values?.fileSize ?? 0)
-                guard size >= largeFileThreshold else { continue }
+                ),
+                values.isRegularFile == true else { continue }
+
+                let size = Int64(values.fileSize ?? 0)
+                let modDate = values.contentModificationDate
+
+                // Include if: size >= threshold OR (old enough AND > 10MB)
+                let isLarge = size >= largeFileThreshold
+                let isOldAndBig = modDate != nil && modDate! < oldCutoff && size >= minOldFileSize
+
+                guard isLarge || isOldAndBig else { continue }
 
                 items.append(
                     JunkItem(
                         path: url.path,
                         size: size,
                         category: .largeFiles,
-                        lastAccessDate: values?.contentModificationDate
+                        lastAccessDate: modDate
                     )
                 )
             }
