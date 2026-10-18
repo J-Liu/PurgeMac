@@ -4,11 +4,12 @@
 import AppKit
 import Sparkle
 
-/// Settings window with tabs for General and About.
+/// Settings window with tabs for General, Large Files, and About.
 final class SettingsWindow: NSWindow {
 
     private var tabView: NSTabView!
     private var generalTab: NSView!
+    private var largeFilesTab: NSView!
     private var aboutTab: NSView!
     private var languagePopup: NSPopUpButton!
     private var scanDirsTableView: NSTableView!
@@ -33,7 +34,7 @@ final class SettingsWindow: NSWindow {
 
         let screenFrame = NSScreen.main?.visibleFrame ?? .zero
         let width: CGFloat = 550
-        let height: CGFloat = 520
+        let height: CGFloat = 420
         let x = screenFrame.midX - width / 2
         let y = screenFrame.midY - height / 2
         let frame = NSRect(x: x, y: y, width: width, height: height)
@@ -47,7 +48,7 @@ final class SettingsWindow: NSWindow {
 
         self.title = L("settings.title")
         self.isReleasedWhenClosed = false
-        self.minSize = NSSize(width: 450, height: 400)
+        self.minSize = NSSize(width: 450, height: 350)
 
         setupUI()
         setupKeyHandlers()
@@ -82,6 +83,12 @@ final class SettingsWindow: NSWindow {
         generalItem.view = generalTab
         tabView.addTabViewItem(generalItem)
 
+        largeFilesTab = createLargeFilesTab()
+        let largeFilesItem = NSTabViewItem(identifier: "largeFiles")
+        largeFilesItem.label = L("settings.tab.largeFiles")
+        largeFilesItem.view = largeFilesTab
+        tabView.addTabViewItem(largeFilesItem)
+
         aboutTab = createAboutTab()
         let aboutItem = NSTabViewItem(identifier: "about")
         aboutItem.label = L("settings.tab.about")
@@ -98,7 +105,6 @@ final class SettingsWindow: NSWindow {
 
     // MARK: - Layout Helpers
 
-    /// Wrap content in a top-aligned container so the stack starts at the top.
     private func wrapInTopAlignedContainer(_ stack: NSStackView) -> NSView {
         let container = NSView()
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -111,7 +117,6 @@ final class SettingsWindow: NSWindow {
         return container
     }
 
-    /// Build a row: right-aligned label on the left, control on the right.
     private func makeRow(label: String, control: NSView) -> NSStackView {
         let labelField = NSTextField(labelWithString: label)
         labelField.alignment = .right
@@ -127,7 +132,6 @@ final class SettingsWindow: NSWindow {
         return row
     }
 
-    /// Build a vertical stack with consistent spacing.
     private func makeVerticalStack() -> NSStackView {
         let stack = NSStackView()
         stack.orientation = .vertical
@@ -148,7 +152,6 @@ final class SettingsWindow: NSWindow {
             languagePopup.addItem(withTitle: language.displayName)
             languagePopup.lastItem?.representedObject = language
         }
-        // Select current language
         let current = LocalizationManager.shared.currentLanguage
         if let index = AppLanguage.allCases.firstIndex(of: current) {
             languagePopup.selectItem(at: index)
@@ -167,10 +170,13 @@ final class SettingsWindow: NSWindow {
         restartLabel.identifier = NSUserInterfaceItemIdentifier("restartLabel")
         stack.addArrangedSubview(restartLabel)
 
-        // Large Files section
-        let sectionLabel = NSTextField(labelWithString: L("settings.largeFiles.section"))
-        sectionLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        stack.addArrangedSubview(sectionLabel)
+        return wrapInTopAlignedContainer(stack)
+    }
+
+    // MARK: - Large Files Tab
+
+    private func createLargeFilesTab() -> NSView {
+        let stack = makeVerticalStack()
 
         // Large file threshold
         let largeFileThresholdField = NSTextField()
@@ -228,15 +234,15 @@ final class SettingsWindow: NSWindow {
         scanDirsTableView.dataSource = self
         scanDirsTableView.usesAlternatingRowBackgroundColors = true
         let scanDirColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
-        scanDirColumn.title = L("settings.largeFiles.directories")
-        scanDirColumn.width = 320
+        scanDirColumn.title = ""
+        scanDirColumn.width = 460
         scanDirsTableView.addTableColumn(scanDirColumn)
 
         let scanScroll = NSScrollView()
         scanScroll.documentView = scanDirsTableView
         scanScroll.hasVerticalScroller = true
         scanScroll.translatesAutoresizingMaskIntoConstraints = false
-        scanScroll.heightAnchor.constraint(equalToConstant: 80).isActive = true
+        scanScroll.heightAnchor.constraint(equalToConstant: 120).isActive = true
 
         // Add/Remove buttons for scan dirs
         let addScanDirButton = NSButton(title: L("settings.button.add"), target: self, action: #selector(addScanDirClicked))
@@ -266,15 +272,15 @@ final class SettingsWindow: NSWindow {
         excludedDirsTableView.dataSource = self
         excludedDirsTableView.usesAlternatingRowBackgroundColors = true
         let excludedDirColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
-        excludedDirColumn.title = L("settings.largeFiles.excluded")
-        excludedDirColumn.width = 320
+        excludedDirColumn.title = ""
+        excludedDirColumn.width = 460
         excludedDirsTableView.addTableColumn(excludedDirColumn)
 
         let excludedScroll = NSScrollView()
         excludedScroll.documentView = excludedDirsTableView
         excludedScroll.hasVerticalScroller = true
         excludedScroll.translatesAutoresizingMaskIntoConstraints = false
-        excludedScroll.heightAnchor.constraint(equalToConstant: 80).isActive = true
+        excludedScroll.heightAnchor.constraint(equalToConstant: 120).isActive = true
 
         // Add/Remove buttons for excluded dirs
         let addExcludedDirButton = NSButton(title: L("settings.button.add"), target: self, action: #selector(addExcludedDirClicked))
@@ -298,7 +304,6 @@ final class SettingsWindow: NSWindow {
     private func createAboutTab() -> NSView {
         let container = NSView()
 
-        // App Icon
         let appIcon = NSImageView()
         if let icnsPath = Bundle.main.path(forResource: "PurgeMac", ofType: "icns"),
            let image = NSImage(contentsOfFile: icnsPath) {
@@ -314,14 +319,12 @@ final class SettingsWindow: NSWindow {
         appIcon.heightAnchor.constraint(equalToConstant: 80).isActive = true
         container.addSubview(appIcon)
 
-        // App Name
         let nameLabel = NSTextField(labelWithString: "PurgeMac")
         nameLabel.font = .systemFont(ofSize: 22, weight: .semibold)
         nameLabel.alignment = .center
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(nameLabel)
 
-        // Version
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
         let versionLabel = NSTextField(labelWithString: "\(L("settings.about.version")) \(version)")
         versionLabel.alignment = .center
@@ -329,20 +332,17 @@ final class SettingsWindow: NSWindow {
         versionLabel.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(versionLabel)
 
-        // Copyright
         let copyrightLabel = NSTextField(labelWithString: L("settings.about.copyright"))
         copyrightLabel.alignment = .center
         copyrightLabel.textColor = .secondaryLabelColor
         copyrightLabel.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(copyrightLabel)
 
-        // GitHub link
         let githubButton = NSButton(title: "github.com/J-Liu/PurgeMac", target: self, action: #selector(openGitHub))
         githubButton.bezelStyle = .rounded
         githubButton.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(githubButton)
 
-        // Check for Updates button
         let checkUpdatesButton = NSButton(title: L("menu.checkForUpdates"), target: self, action: #selector(checkForUpdatesNow))
         checkUpdatesButton.bezelStyle = .rounded
         checkUpdatesButton.translatesAutoresizingMaskIntoConstraints = false
@@ -395,7 +395,6 @@ final class SettingsWindow: NSWindow {
         guard let selected = sender.selectedItem?.representedObject as? AppLanguage else { return }
         LocalizationManager.shared.currentLanguage = selected
 
-        // Show restart hint
         if let restartLabel = generalTab.subviews.first(where: { $0.identifier?.rawValue == "restartLabel" }) as? NSTextField {
             restartLabel.isHidden = false
         }
@@ -489,7 +488,6 @@ final class SettingsWindow: NSWindow {
     }
 
     @objc private func checkForUpdatesNow() {
-        // Trigger Sparkle update check
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.checkForUpdates()
         }
@@ -525,7 +523,9 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
 
         let imageView = NSImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.image = NSWorkspace.shared.icon(forFile: path)
+        // Use folder icon
+        imageView.image = NSImage(systemSymbolName: "folder.fill", accessibilityDescription: nil)
+        imageView.contentTintColor = .systemBlue
         imageView.imageScaling = .scaleProportionallyUpOrDown
         cell.addSubview(imageView)
 
@@ -541,7 +541,7 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
             imageView.widthAnchor.constraint(equalToConstant: 16),
             imageView.heightAnchor.constraint(equalToConstant: 16),
 
-            textField.leadingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: 4),
+            textField.leadingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: 6),
             textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
             textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
         ])

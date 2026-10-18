@@ -88,6 +88,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         // Settings
         "settings.title": "Settings",
         "settings.tab.general": "General",
+        "settings.tab.largeFiles": "Large Files",
         "settings.tab.about": "About",
         "settings.language": "Language:",
         "settings.language.system": "System Default",
@@ -185,6 +186,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         // Settings
         "settings.title": "设置",
         "settings.tab.general": "通用",
+        "settings.tab.largeFiles": "大文件",
         "settings.tab.about": "关于",
         "settings.language": "语言：",
         "settings.language.system": "系统默认",
@@ -282,6 +284,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         // Settings
         "settings.title": "設定",
         "settings.tab.general": "一般",
+        "settings.tab.largeFiles": "大檔案",
         "settings.tab.about": "關於",
         "settings.language": "語言：",
         "settings.language.system": "系統預設",
