@@ -101,6 +101,10 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.largeFiles.oldFiles": "Files older than:",
         "settings.largeFiles.months": "months",
         "settings.largeFiles.oldMinSize": "Minimum size:",
+        "settings.largeFiles.scanDirs": "Scan Directories",
+        "settings.largeFiles.directories": "Directories:",
+        "settings.largeFiles.excludedDirs": "Excluded Directories",
+        "settings.largeFiles.excluded": "Exclude:",
 
         // Sidebar
         "sidebar.uninstall": "Uninstaller",
@@ -190,6 +194,10 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.largeFiles.oldFiles": "文件超过：",
         "settings.largeFiles.months": "个月",
         "settings.largeFiles.oldMinSize": "最小大小：",
+        "settings.largeFiles.scanDirs": "扫描目录",
+        "settings.largeFiles.directories": "目录：",
+        "settings.largeFiles.excludedDirs": "忽略目录",
+        "settings.largeFiles.excluded": "忽略：",
 
         // Sidebar
         "sidebar.uninstall": "卸载器",
@@ -279,6 +287,10 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.largeFiles.oldFiles": "檔案超過：",
         "settings.largeFiles.months": "個月",
         "settings.largeFiles.oldMinSize": "最小大小：",
+        "settings.largeFiles.scanDirs": "掃描目錄",
+        "settings.largeFiles.directories": "目錄：",
+        "settings.largeFiles.excludedDirs": "忽略目錄",
+        "settings.largeFiles.excluded": "忽略：",
 
         // Sidebar
         "sidebar.uninstall": "卸載器",

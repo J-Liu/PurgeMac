@@ -201,6 +201,36 @@ final class SettingsWindow: NSWindow {
         minSizeRow.spacing = 4
         stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.oldMinSize"), control: minSizeRow))
 
+        // Scan directories section
+        let scanDirsLabel = NSTextField(labelWithString: L("settings.largeFiles.scanDirs"))
+        scanDirsLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        stack.addArrangedSubview(scanDirsLabel)
+
+        // Scan directories list
+        let scanDirsArray = UserDefaults.standard.stringArray(forKey: "settings.largeFileScanDirs") ?? ["~/Downloads", "~/Documents", "~/Desktop"]
+        let scanDirsField = NSTextField()
+        scanDirsField.stringValue = scanDirsArray.joined(separator: ", ")
+        scanDirsField.placeholderString = "~/Downloads, ~/Documents, ~/Desktop"
+        scanDirsField.target = self
+        scanDirsField.action = #selector(scanDirsChanged(_:))
+        scanDirsField.widthAnchor.constraint(equalToConstant: 280).isActive = true
+        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.directories"), control: scanDirsField))
+
+        // Excluded directories section
+        let excludedLabel = NSTextField(labelWithString: L("settings.largeFiles.excludedDirs"))
+        excludedLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        stack.addArrangedSubview(excludedLabel)
+
+        // Excluded directories list
+        let excludedArray = UserDefaults.standard.stringArray(forKey: "settings.largeFileExcludedDirs") ?? []
+        let excludedField = NSTextField()
+        excludedField.stringValue = excludedArray.joined(separator: ", ")
+        excludedField.placeholderString = "~/VirtualBox VMs, ~/Projects"
+        excludedField.target = self
+        excludedField.action = #selector(excludedDirsChanged(_:))
+        excludedField.widthAnchor.constraint(equalToConstant: 280).isActive = true
+        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.excluded"), control: excludedField))
+
         return wrapInTopAlignedContainer(stack)
     }
 
@@ -325,6 +355,22 @@ final class SettingsWindow: NSWindow {
     @objc private func oldFileMinSizeChanged(_ sender: NSTextField) {
         let value = Int(sender.stringValue) ?? 10
         UserDefaults.standard.set(max(1, value), forKey: "settings.oldFileMinSizeMB")
+    }
+
+    @objc private func scanDirsChanged(_ sender: NSTextField) {
+        let dirs = sender.stringValue
+            .components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        UserDefaults.standard.set(dirs, forKey: "settings.largeFileScanDirs")
+    }
+
+    @objc private func excludedDirsChanged(_ sender: NSTextField) {
+        let dirs = sender.stringValue
+            .components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        UserDefaults.standard.set(dirs, forKey: "settings.largeFileExcludedDirs")
     }
 
     @objc private func checkForUpdatesNow() {

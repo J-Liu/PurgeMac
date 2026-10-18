@@ -8,7 +8,7 @@ import Foundation
 /// Categories differ in how they discover items:
 /// - caches and logs scan the top level of their Library directories,
 /// - browser and developer caches target a fixed set of known directories,
-/// - large files recursively walk Downloads, Documents, and Desktop looking for big or old files,
+/// - large files recursively walk configured directories looking for big or old files,
 /// - trash lists the current contents of the Trash.
 public struct JunkScanner {
     /// The number of days an item must be untouched to be eligible for
@@ -24,11 +24,19 @@ public struct JunkScanner {
     /// Minimum size in bytes for old files to be reported.
     public let oldFileMinSize: Int64
 
+    /// Directories to scan for large files.
+    public let scanDirs: [String]
+
+    /// Directories to exclude from large file scan.
+    public let excludedDirs: [String]
+
     public init(
         olderThanDays: Int = 30,
         largeFileThresholdMB: Int64? = nil,
         oldFileMonths: Int? = nil,
-        oldFileMinSizeMB: Int64? = nil
+        oldFileMinSizeMB: Int64? = nil,
+        scanDirs: [String]? = nil,
+        excludedDirs: [String]? = nil
     ) {
         self.olderThanDays = olderThanDays
 
@@ -41,6 +49,26 @@ public struct JunkScanner {
         self.largeFileThreshold = max(1, thresholdMB) * 1024 * 1024
         self.oldFileMonths = months
         self.oldFileMinSize = max(1, minSizeMB) * 1024 * 1024
+
+        // Expand ~ in paths
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let expandPath: (String) -> String = { path in
+            path.replacingOccurrences(of: "~", with: home)
+        }
+
+        if let dirs = scanDirs {
+            self.scanDirs = dirs.map(expandPath)
+        } else {
+            let rawDirs = defaults.stringArray(forKey: "settings.largeFileScanDirs") ?? ["~/Downloads", "~/Documents", "~/Desktop"]
+            self.scanDirs = rawDirs.map(expandPath)
+        }
+
+        if let dirs = excludedDirs {
+            self.excludedDirs = dirs.map(expandPath)
+        } else {
+            let rawDirs = defaults.stringArray(forKey: "settings.largeFileExcludedDirs") ?? []
+            self.excludedDirs = rawDirs.map(expandPath)
+        }
     }
 
     /// Scans the given category and returns eligible junk, largest first.
@@ -137,12 +165,7 @@ public struct JunkScanner {
     /// or files older than oldFileMonths that are larger than oldFileMinSize.
     private func scanLargeFiles() -> [JunkItem] {
         var items: [JunkItem] = []
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let roots: [URL] = [
-            home.appendingPathComponent("Downloads", isDirectory: true),
-            home.appendingPathComponent("Documents", isDirectory: true),
-            home.appendingPathComponent("Desktop", isDirectory: true),
-        ]
+        let roots = scanDirs.map { URL(fileURLWithPath: $0) }
 
         let oldCutoff = Calendar.current.date(
             byAdding: .month,
@@ -150,8 +173,18 @@ public struct JunkScanner {
             to: Date()
         ) ?? Date.distantPast
 
+        func isExcluded(_ path: String) -> Bool {
+            for excluded in excludedDirs {
+                if path == excluded || path.hasPrefix(excluded + "/") {
+                    return true
+                }
+            }
+            return false
+        }
+
         for root in roots {
-            guard let enumerator = FileManager.default.enumerator(
+            guard !isExcluded(root.path),
+                  let enumerator = FileManager.default.enumerator(
                 at: root,
                 includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey],
                 options: [.skipsHiddenFiles, .skipsPackageDescendants],
@@ -161,6 +194,12 @@ public struct JunkScanner {
             }
 
             for case let url as URL in enumerator {
+                // Skip excluded directories
+                if !excludedDirs.isEmpty && isExcluded(url.path) {
+                    enumerator.skipDescendants()
+                    continue
+                }
+
                 guard let values = try? url.resourceValues(
                     forKeys: [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey]
                 ),
