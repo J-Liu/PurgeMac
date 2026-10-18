@@ -152,10 +152,7 @@ extension SidebarViewController: NSTableViewDataSource, NSTableViewDelegate {
                 if rootItems[i].identifier == entry.item.identifier {
                     rootItems[i].isExpanded.toggle()
                     flattenItems()
-                    // Delay reload to avoid crash
-                    DispatchQueue.main.async { [weak self] in
-                        self?.tableView.reloadData()
-                    }
+                    tableView.reloadData()
                     return
                 }
             }
