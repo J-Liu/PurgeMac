@@ -296,6 +296,7 @@ final class SettingsWindow: NSWindow {
         let excludedDirsContainer = NSStackView(views: [excludedScroll, excludedButtonsRow])
         excludedDirsContainer.orientation = .vertical
         excludedDirsContainer.spacing = 8
+        excludedDirsContainer.alignment = .leading
         stack.addArrangedSubview(excludedDirsContainer)
 
         return wrapInTopAlignedContainer(stack)
@@ -426,7 +427,8 @@ final class SettingsWindow: NSWindow {
 
         if panel.runModal() == .OK {
             for url in panel.urls {
-                let path = url.path
+                // Convert to ~ notation for user home directory
+                let path = (url.path as NSString).abbreviatingWithTildeInPath
                 if !scanDirs.contains(path) {
                     scanDirs.append(path)
                 }
@@ -462,7 +464,8 @@ final class SettingsWindow: NSWindow {
 
         if panel.runModal() == .OK {
             for url in panel.urls {
-                let path = url.path
+                // Convert to ~ notation for user home directory
+                let path = (url.path as NSString).abbreviatingWithTildeInPath
                 if !excludedDirs.contains(path) {
                     excludedDirs.append(path)
                 }

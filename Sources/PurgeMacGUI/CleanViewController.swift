@@ -8,6 +8,7 @@ import PurgeMacCore
 /// and moves the selected items to the Trash.
 final class CleanViewController: NSViewController {
     private let itemTableView = NSTableView()
+    private let itemScroll = NSScrollView()
     private let statusLabel = NSTextField(labelWithString: L("clean.status.initial"))
     private let selectAllCheckbox = NSButton(checkboxWithTitle: L("clean.selectAll"), target: nil, action: nil)
     private let moveToTrashButton = NSButton(title: L("clean.button.moveToTrash"), target: nil, action: nil)
@@ -97,11 +98,10 @@ final class CleanViewController: NSViewController {
         itemColumn.resizingMask = .autoresizingMask
         itemTableView.addTableColumn(itemColumn)
 
-        let itemScroll = NSScrollView()
         itemScroll.documentView = itemTableView
         itemScroll.hasVerticalScroller = true
 
-        // Loading overlay with semi-transparent background
+        // Loading overlay with semi-transparent background (following UninstallViewController pattern)
         loadingOverlay.wantsLayer = true
         loadingOverlay.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.7).cgColor
         loadingOverlay.isHidden = true
@@ -119,7 +119,6 @@ final class CleanViewController: NSViewController {
 
         selectAllCheckbox.target = self
         selectAllCheckbox.action = #selector(selectAllToggled)
-        selectAllCheckbox.translatesAutoresizingMaskIntoConstraints = false
         selectAllCheckbox.isHidden = true
 
         setMoveToTrashButtonTitle()
@@ -127,7 +126,6 @@ final class CleanViewController: NSViewController {
         moveToTrashButton.action = #selector(moveToTrashClicked)
         moveToTrashButton.bezelStyle = .rounded
         moveToTrashButton.isHidden = true
-        moveToTrashButton.translatesAutoresizingMaskIntoConstraints = false
 
         // Listen for language changes
         NotificationCenter.default.addObserver(
@@ -137,6 +135,7 @@ final class CleanViewController: NSViewController {
             object: nil
         )
 
+        // Add all views to root (order matters for z-order - loadingOverlay must come after itemScroll)
         for subview in [statusLabel, selectAllCheckbox, moveToTrashButton, itemScroll, loadingOverlay] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(subview)
