@@ -67,6 +67,8 @@ final class SidebarViewController: NSViewController {
                 SidebarItem(title: L("sidebar.clean.largeFiles"), identifier: "clean.largeFiles"),
             ])
         ]
+        // Expand Clean Junk by default
+        rootItems[1].isExpanded = true
         flattenItems()
     }
 

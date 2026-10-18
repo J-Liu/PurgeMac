@@ -44,14 +44,21 @@ final class MainSplitViewController: NSSplitViewController {
 
     private func showContent(for identifier: String) {
         guard splitViewItems.count > 1 else { return }
+
+        let newVC: NSViewController
         switch identifier {
         case "uninstall":
-            splitViewItems[1].viewController = uninstallViewController
+            newVC = uninstallViewController
         default:
-            // All clean sub-pages use CleanViewController with different modes
-            splitViewItems[1].viewController = cleanViewController
             cleanViewController.setMode(identifier)
+            newVC = cleanViewController
         }
+
+        // Replace the content split view item
+        let newItem = NSSplitViewItem(viewController: newVC)
+        newItem.minimumThickness = 500
+        removeSplitViewItem(splitViewItems[1])
+        addSplitViewItem(newItem)
     }
 
     @objc private func languageDidChange() {
