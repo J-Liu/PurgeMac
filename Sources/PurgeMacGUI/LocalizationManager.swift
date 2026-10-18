@@ -5,6 +5,7 @@ import Foundation
 
 extension Notification.Name {
     static let languageChanged = Notification.Name("languageChanged")
+    static let largeFilesSettingsChanged = Notification.Name("largeFilesSettingsChanged")
 }
 
 /// Supported languages for the app

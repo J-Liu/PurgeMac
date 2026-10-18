@@ -45,6 +45,8 @@ final class CleanViewController: NSViewController {
 
     private func autoScanCategory(_ category: JunkCategory) {
         isLoading = true
+        itemScroll.isHidden = false
+        itemTableView.isHidden = false
         loadingOverlay.isHidden = false
         progressIndicator.startAnimation(nil)
         itemTableView.reloadData()
@@ -135,6 +137,14 @@ final class CleanViewController: NSViewController {
             object: nil
         )
 
+        // Listen for large files settings changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(largeFilesSettingsChanged),
+            name: .largeFilesSettingsChanged,
+            object: nil
+        )
+
         // Add all views to root (order matters for z-order - loadingOverlay must come after itemScroll)
         for subview in [statusLabel, selectAllCheckbox, moveToTrashButton, itemScroll, loadingOverlay] {
             subview.translatesAutoresizingMaskIntoConstraints = false
@@ -172,6 +182,13 @@ final class CleanViewController: NSViewController {
 
     @objc private func languageDidChange() {
         reloadData()
+    }
+
+    @objc private func largeFilesSettingsChanged() {
+        // Rescan large files if that's the current category
+        if currentCategory == .largeFiles {
+            autoScanCategory(.largeFiles)
+        }
     }
 
     private func setMoveToTrashButtonTitle() {

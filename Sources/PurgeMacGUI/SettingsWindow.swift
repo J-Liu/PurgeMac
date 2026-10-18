@@ -230,6 +230,7 @@ final class SettingsWindow: NSWindow {
         scanDirsTableView.delegate = self
         scanDirsTableView.dataSource = self
         scanDirsTableView.usesAlternatingRowBackgroundColors = true
+        scanDirsTableView.headerView = nil
         let scanDirColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
         scanDirColumn.title = ""
         scanDirColumn.width = 500
@@ -271,6 +272,7 @@ final class SettingsWindow: NSWindow {
         excludedDirsTableView.delegate = self
         excludedDirsTableView.dataSource = self
         excludedDirsTableView.usesAlternatingRowBackgroundColors = true
+        excludedDirsTableView.headerView = nil
         let excludedDirColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
         excludedDirColumn.title = ""
         excludedDirColumn.width = 500
@@ -453,6 +455,7 @@ final class SettingsWindow: NSWindow {
 
     private func saveScanDirs() {
         UserDefaults.standard.set(scanDirs, forKey: "settings.largeFileScanDirs")
+        NotificationCenter.default.post(name: .largeFilesSettingsChanged, object: nil)
     }
 
     @objc private func addExcludedDirClicked() {
@@ -490,6 +493,7 @@ final class SettingsWindow: NSWindow {
 
     private func saveExcludedDirs() {
         UserDefaults.standard.set(excludedDirs, forKey: "settings.largeFileExcludedDirs")
+        NotificationCenter.default.post(name: .largeFilesSettingsChanged, object: nil)
     }
 
     @objc private func checkForUpdatesNow() {
