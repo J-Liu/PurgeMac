@@ -408,16 +408,19 @@ final class SettingsWindow: NSWindow {
     @objc private func largeFileThresholdChanged(_ sender: NSTextField) {
         let value = Int(sender.stringValue) ?? 100
         UserDefaults.standard.set(max(1, value), forKey: "settings.largeFileThresholdMB")
+        NotificationCenter.default.post(name: .largeFilesSettingsChanged, object: nil)
     }
 
     @objc private func oldFileMonthsChanged(_ sender: NSTextField) {
         let value = Int(sender.stringValue) ?? 12
         UserDefaults.standard.set(max(1, value), forKey: "settings.oldFileMonths")
+        NotificationCenter.default.post(name: .largeFilesSettingsChanged, object: nil)
     }
 
     @objc private func oldFileMinSizeChanged(_ sender: NSTextField) {
         let value = Int(sender.stringValue) ?? 10
         UserDefaults.standard.set(max(1, value), forKey: "settings.oldFileMinSizeMB")
+        NotificationCenter.default.post(name: .largeFilesSettingsChanged, object: nil)
     }
 
     @objc private func addScanDirClicked() {

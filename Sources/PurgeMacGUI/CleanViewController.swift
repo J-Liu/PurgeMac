@@ -103,11 +103,10 @@ final class CleanViewController: NSViewController {
         itemScroll.documentView = itemTableView
         itemScroll.hasVerticalScroller = true
 
-        // Loading overlay with semi-transparent background (following UninstallViewController pattern)
+        // Loading overlay with semi-transparent background (exactly like UninstallViewController)
         loadingOverlay.wantsLayer = true
         loadingOverlay.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.7).cgColor
         loadingOverlay.isHidden = true
-        loadingOverlay.translatesAutoresizingMaskIntoConstraints = false
 
         progressIndicator.style = .spinning
         progressIndicator.controlSize = .regular
@@ -185,8 +184,8 @@ final class CleanViewController: NSViewController {
     }
 
     @objc private func largeFilesSettingsChanged() {
-        // Rescan large files if that's the current category
-        if currentCategory == .largeFiles {
+        // Rescan large files if currently viewing
+        if currentCategory == .largeFiles && currentMode.hasPrefix("clean.largeFiles") {
             autoScanCategory(.largeFiles)
         }
     }
