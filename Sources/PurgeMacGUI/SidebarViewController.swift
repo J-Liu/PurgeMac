@@ -7,12 +7,14 @@ import AppKit
 struct SidebarItem {
     let title: String
     let identifier: String
+    let iconName: String
     var isExpanded: Bool = false
     let children: [SidebarItem]?
 
-    init(title: String, identifier: String, children: [SidebarItem]? = nil) {
+    init(title: String, identifier: String, iconName: String, children: [SidebarItem]? = nil) {
         self.title = title
         self.identifier = identifier
+        self.iconName = iconName
         self.children = children
     }
 }
@@ -59,12 +61,12 @@ final class SidebarViewController: NSViewController {
 
     private func rebuildItems() {
         rootItems = [
-            SidebarItem(title: L("sidebar.uninstall"), identifier: "uninstall"),
-            SidebarItem(title: L("sidebar.cleanup"), identifier: "cleanup", children: [
-                SidebarItem(title: L("sidebar.clean.caches"), identifier: "clean.caches"),
-                SidebarItem(title: L("sidebar.clean.logs"), identifier: "clean.logs"),
-                SidebarItem(title: L("sidebar.clean.leftovers"), identifier: "clean.leftovers"),
-                SidebarItem(title: L("sidebar.clean.largeFiles"), identifier: "clean.largeFiles"),
+            SidebarItem(title: L("sidebar.uninstall"), identifier: "uninstall", iconName: "trash.fill"),
+            SidebarItem(title: L("sidebar.cleanup"), identifier: "cleanup", iconName: "broom.fill", children: [
+                SidebarItem(title: L("sidebar.clean.caches"), identifier: "clean.caches", iconName: "folder.fill.badge.gearshape"),
+                SidebarItem(title: L("sidebar.clean.logs"), identifier: "clean.logs", iconName: "doc.text.fill"),
+                SidebarItem(title: L("sidebar.clean.leftovers"), identifier: "clean.leftovers", iconName: "tray.2.fill"),
+                SidebarItem(title: L("sidebar.clean.largeFiles"), identifier: "clean.largeFiles", iconName: "externaldrive.fill"),
             ])
         ]
         // Expand Clean Junk by default
@@ -125,20 +127,38 @@ extension SidebarViewController: NSTableViewDataSource, NSTableViewDelegate {
         if cell == nil {
             cell = NSTableCellView()
             cell!.identifier = cellId
+
+            let imageView = NSImageView()
+            imageView.translatesAutoresizingMaskIntoConstraints = false
+            imageView.imageScaling = .scaleProportionallyDown
+            cell!.addSubview(imageView)
+            cell!.imageView = imageView
+
             let textField = NSTextField(labelWithString: "")
             textField.translatesAutoresizingMaskIntoConstraints = false
             textField.lineBreakMode = .byTruncatingTail
             cell!.addSubview(textField)
             cell!.textField = textField
-            let indent = CGFloat(entry.depth) * 16 + 16
+
+            let indent = CGFloat(entry.depth) * 16 + 8
             NSLayoutConstraint.activate([
-                textField.leadingAnchor.constraint(equalTo: cell!.leadingAnchor, constant: indent),
+                imageView.leadingAnchor.constraint(equalTo: cell!.leadingAnchor, constant: indent),
+                imageView.centerYAnchor.constraint(equalTo: cell!.centerYAnchor),
+                imageView.widthAnchor.constraint(equalToConstant: 18),
+                imageView.heightAnchor.constraint(equalToConstant: 18),
+
+                textField.leadingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: 6),
                 textField.trailingAnchor.constraint(equalTo: cell!.trailingAnchor, constant: -8),
                 textField.centerYAnchor.constraint(equalTo: cell!.centerYAnchor),
             ])
         }
 
         cell?.textField?.stringValue = entry.item.title
+        if let imageView = cell?.imageView {
+            let image = NSImage(systemSymbolName: entry.item.iconName, accessibilityDescription: nil)
+            imageView.image = image
+            imageView.contentTintColor = .secondaryLabelColor
+        }
         return cell
     }
 
