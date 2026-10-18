@@ -164,6 +164,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.alert.confirm.message": "Selected items will be moved to the Trash.",
         "clean.alert.confirm.clean": "Clean",
         "clean.button.moveToTrash": "Move to Trash",
+        "clean.selectedSize": "%@ will be freed",
         "clean.alert.move.title": "Move this file to the Trash?",
         "clean.selectAll": "Select All",
 
@@ -262,6 +263,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.alert.confirm.message": "选中的项目将被移至废纸篓。",
         "clean.alert.confirm.clean": "清理",
         "clean.button.moveToTrash": "移至废纸篓",
+        "clean.selectedSize": "将释放 %@",
         "clean.alert.move.title": "将此文件移至废纸篓？",
         "clean.selectAll": "全选",
 
@@ -360,6 +362,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.alert.confirm.message": "選取的項目將被移至垃圾桶。",
         "clean.alert.confirm.clean": "清理",
         "clean.button.moveToTrash": "移至垃圾桶",
+        "clean.selectedSize": "將釋放 %@",
         "clean.alert.move.title": "將此檔案移至垃圾桶？",
         "clean.selectAll": "全選",
 

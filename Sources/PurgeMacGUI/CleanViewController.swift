@@ -12,6 +12,7 @@ final class CleanViewController: NSViewController {
     private let statusLabel = NSTextField(labelWithString: L("clean.status.initial"))
     private let selectAllCheckbox = NSButton(checkboxWithTitle: L("clean.selectAll"), target: nil, action: nil)
     private let moveToTrashButton = NSButton(title: L("clean.button.moveToTrash"), target: nil, action: nil)
+    private let selectedSizeLabel = NSTextField(labelWithString: "")
     private let progressIndicator = NSProgressIndicator()
     private let loadingOverlay = NSView()
 
@@ -68,6 +69,7 @@ final class CleanViewController: NSViewController {
                 self?.currentCategory = category
                 self?.selectedIndexes = []
                 self?.itemTableView.reloadData()
+                self?.adjustColumnWidth(for: items)
                 self?.updateSelectAllCheckboxState()
                 self?.updateMoveToTrashButtonVisibility()
                 self?.selectAllCheckbox.isHidden = items.isEmpty
@@ -96,14 +98,16 @@ final class CleanViewController: NSViewController {
         itemTableView.delegate = self
         itemTableView.dataSource = self
         itemTableView.usesAlternatingRowBackgroundColors = true
+        itemTableView.columnAutoresizingStyle = .noColumnAutoresizing
         let itemColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("item"))
         itemColumn.title = L("clean.column.items")
-        itemColumn.width = 560
-        itemColumn.resizingMask = .autoresizingMask
+        itemColumn.minWidth = 200
+        itemColumn.resizingMask = .userResizingMask
         itemTableView.addTableColumn(itemColumn)
 
         itemScroll.documentView = itemTableView
         itemScroll.hasVerticalScroller = true
+        itemScroll.hasHorizontalScroller = true
 
         // Loading overlay with semi-transparent background (exactly like UninstallViewController)
         loadingOverlay.wantsLayer = true
@@ -130,6 +134,9 @@ final class CleanViewController: NSViewController {
         moveToTrashButton.bezelStyle = .rounded
         moveToTrashButton.isHidden = true
 
+        selectedSizeLabel.textColor = .secondaryLabelColor
+        selectedSizeLabel.lineBreakMode = .byTruncatingTail
+
         // Listen for language changes
         NotificationCenter.default.addObserver(
             self,
@@ -147,7 +154,7 @@ final class CleanViewController: NSViewController {
         )
 
         // Add all views to root (order matters for z-order - loadingOverlay must come after itemScroll)
-        for subview in [statusLabel, selectAllCheckbox, moveToTrashButton, itemScroll, loadingOverlay] {
+        for subview in [statusLabel, selectAllCheckbox, moveToTrashButton, selectedSizeLabel, itemScroll, loadingOverlay] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(subview)
         }
@@ -163,6 +170,9 @@ final class CleanViewController: NSViewController {
             moveToTrashButton.centerYAnchor.constraint(equalTo: selectAllCheckbox.centerYAnchor),
             moveToTrashButton.leadingAnchor.constraint(equalTo: selectAllCheckbox.trailingAnchor, constant: 12),
             moveToTrashButton.widthAnchor.constraint(equalToConstant: 110),
+
+            selectedSizeLabel.centerYAnchor.constraint(equalTo: selectAllCheckbox.centerYAnchor),
+            selectedSizeLabel.leadingAnchor.constraint(equalTo: moveToTrashButton.trailingAnchor, constant: 8),
 
             itemScroll.topAnchor.constraint(equalTo: selectAllCheckbox.bottomAnchor, constant: 8),
             itemScroll.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
@@ -236,6 +246,21 @@ final class CleanViewController: NSViewController {
 
     private func updateMoveToTrashButtonVisibility() {
         moveToTrashButton.isHidden = selectedIndexes.isEmpty
+
+        // Update selected size label
+        if selectedIndexes.isEmpty {
+            selectedSizeLabel.stringValue = ""
+        } else {
+            guard let category = currentCategory,
+                  let items = itemsByCategory[category] else {
+                selectedSizeLabel.stringValue = ""
+                return
+            }
+            let totalSize = items.enumerated()
+                .filter { selectedIndexes.contains($0.offset) }
+                .reduce(Int64(0)) { $0 + $1.element.size }
+            selectedSizeLabel.stringValue = L("clean.selectedSize", Self.formatBytes(totalSize))
+        }
     }
 
     @objc private func itemCheckboxToggled(_ sender: NSButton) {
@@ -283,6 +308,7 @@ final class CleanViewController: NSViewController {
                 self?.selectedIndexes = []
                 self?.itemsByCategory[categoryCopy] = refreshed
                 self?.itemTableView.reloadData()
+                self?.adjustColumnWidth(for: refreshed)
                 self?.updateSelectAllCheckboxState()
                 self?.updateMoveToTrashButtonVisibility()
                 self?.statusLabel.stringValue = L("clean.status.freed", Self.formatBytes(result.freedBytes))
@@ -294,6 +320,26 @@ final class CleanViewController: NSViewController {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
         return formatter.string(fromByteCount: bytes)
+    }
+
+    private func adjustColumnWidth(for items: [JunkItem]) {
+        guard let column = itemTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("item")) else { return }
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        ]
+
+        var maxWidth: CGFloat = 100 // Minimum width
+
+        for item in items {
+            let text = "\(item.path) — \(Self.formatBytes(item.size))"
+            let size = (text as NSString).size(withAttributes: attributes)
+            // Add padding for checkbox and row margins
+            let width = size.width + 40
+            maxWidth = max(maxWidth, width)
+        }
+
+        column.width = maxWidth
     }
 }
 
