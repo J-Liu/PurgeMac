@@ -160,6 +160,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.alert.confirm.clean": "Clean",
         "clean.button.moveToTrash": "Move to Trash",
         "clean.alert.move.title": "Move this file to the Trash?",
+        "clean.selectAll": "Select All",
 
         // Junk Categories
         "junk.userCaches": "User Caches",
@@ -253,6 +254,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.alert.confirm.clean": "清理",
         "clean.button.moveToTrash": "移至废纸篓",
         "clean.alert.move.title": "将此文件移至废纸篓？",
+        "clean.selectAll": "全选",
 
         // Junk Categories
         "junk.userCaches": "用户缓存",
@@ -346,6 +348,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.alert.confirm.clean": "清理",
         "clean.button.moveToTrash": "移至垃圾桶",
         "clean.alert.move.title": "將此檔案移至垃圾桶？",
+        "clean.selectAll": "全選",
 
         // Junk Categories
         "junk.userCaches": "使用者快取",
