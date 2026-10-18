@@ -96,6 +96,11 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.language.traditionalChinese": "Traditional Chinese",
         "settings.about.version": "Version",
         "settings.about.copyright": "Copyright © 2026 Jia Liu",
+        "settings.largeFiles.section": "Large Files Settings",
+        "settings.largeFiles.threshold": "Size Threshold:",
+        "settings.largeFiles.oldFiles": "Files older than:",
+        "settings.largeFiles.months": "months",
+        "settings.largeFiles.oldMinSize": "Minimum size:",
 
         // Sidebar
         "sidebar.uninstall": "Uninstaller",
@@ -180,6 +185,11 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.language.traditionalChinese": "繁體中文",
         "settings.about.version": "版本",
         "settings.about.copyright": "版权所有 © 2026 Jia Liu",
+        "settings.largeFiles.section": "大文件设置",
+        "settings.largeFiles.threshold": "大小阈值：",
+        "settings.largeFiles.oldFiles": "文件超过：",
+        "settings.largeFiles.months": "个月",
+        "settings.largeFiles.oldMinSize": "最小大小：",
 
         // Sidebar
         "sidebar.uninstall": "卸载器",
@@ -264,6 +274,11 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.language.traditionalChinese": "繁體中文",
         "settings.about.version": "版本",
         "settings.about.copyright": "版權所有 © 2026 Jia Liu",
+        "settings.largeFiles.section": "大檔案設定",
+        "settings.largeFiles.threshold": "大小閾值：",
+        "settings.largeFiles.oldFiles": "檔案超過：",
+        "settings.largeFiles.months": "個月",
+        "settings.largeFiles.oldMinSize": "最小大小：",
 
         // Sidebar
         "sidebar.uninstall": "卸載器",

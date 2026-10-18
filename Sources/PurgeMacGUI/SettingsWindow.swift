@@ -154,6 +154,53 @@ final class SettingsWindow: NSWindow {
         restartLabel.identifier = NSUserInterfaceItemIdentifier("restartLabel")
         stack.addArrangedSubview(restartLabel)
 
+        // Large Files section
+        let sectionLabel = NSTextField(labelWithString: L("settings.largeFiles.section"))
+        sectionLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        stack.addArrangedSubview(sectionLabel)
+
+        // Large file threshold
+        let largeFileThresholdField = NSTextField()
+        largeFileThresholdField.placeholderString = "100"
+        largeFileThresholdField.stringValue = String(UserDefaults.standard.integer(forKey: "settings.largeFileThresholdMB"))
+        largeFileThresholdField.target = self
+        largeFileThresholdField.action = #selector(largeFileThresholdChanged(_:))
+        largeFileThresholdField.widthAnchor.constraint(equalToConstant: 80).isActive = true
+
+        let mbLabel = NSTextField(labelWithString: "MB")
+        let thresholdRow = NSStackView(views: [largeFileThresholdField, mbLabel])
+        thresholdRow.orientation = .horizontal
+        thresholdRow.spacing = 4
+        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.threshold"), control: thresholdRow))
+
+        // Old file months
+        let oldFileMonthsField = NSTextField()
+        oldFileMonthsField.placeholderString = "12"
+        oldFileMonthsField.stringValue = String(UserDefaults.standard.integer(forKey: "settings.oldFileMonths"))
+        oldFileMonthsField.target = self
+        oldFileMonthsField.action = #selector(oldFileMonthsChanged(_:))
+        oldFileMonthsField.widthAnchor.constraint(equalToConstant: 80).isActive = true
+
+        let monthsLabel = NSTextField(labelWithString: L("settings.largeFiles.months"))
+        let monthsRow = NSStackView(views: [oldFileMonthsField, monthsLabel])
+        monthsRow.orientation = .horizontal
+        monthsRow.spacing = 4
+        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.oldFiles"), control: monthsRow))
+
+        // Old file minimum size
+        let oldFileMinSizeField = NSTextField()
+        oldFileMinSizeField.placeholderString = "10"
+        oldFileMinSizeField.stringValue = String(UserDefaults.standard.integer(forKey: "settings.oldFileMinSizeMB"))
+        oldFileMinSizeField.target = self
+        oldFileMinSizeField.action = #selector(oldFileMinSizeChanged(_:))
+        oldFileMinSizeField.widthAnchor.constraint(equalToConstant: 80).isActive = true
+
+        let minMbLabel = NSTextField(labelWithString: "MB")
+        let minSizeRow = NSStackView(views: [oldFileMinSizeField, minMbLabel])
+        minSizeRow.orientation = .horizontal
+        minSizeRow.spacing = 4
+        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.oldMinSize"), control: minSizeRow))
+
         return wrapInTopAlignedContainer(stack)
     }
 
@@ -263,6 +310,21 @@ final class SettingsWindow: NSWindow {
         if let restartLabel = generalTab.subviews.first(where: { $0.identifier?.rawValue == "restartLabel" }) as? NSTextField {
             restartLabel.isHidden = false
         }
+    }
+
+    @objc private func largeFileThresholdChanged(_ sender: NSTextField) {
+        let value = Int(sender.stringValue) ?? 100
+        UserDefaults.standard.set(max(1, value), forKey: "settings.largeFileThresholdMB")
+    }
+
+    @objc private func oldFileMonthsChanged(_ sender: NSTextField) {
+        let value = Int(sender.stringValue) ?? 12
+        UserDefaults.standard.set(max(1, value), forKey: "settings.oldFileMonths")
+    }
+
+    @objc private func oldFileMinSizeChanged(_ sender: NSTextField) {
+        let value = Int(sender.stringValue) ?? 10
+        UserDefaults.standard.set(max(1, value), forKey: "settings.oldFileMinSizeMB")
     }
 
     @objc private func checkForUpdatesNow() {

@@ -18,13 +18,29 @@ public struct JunkScanner {
     /// Files larger than this many bytes are reported by the large-files scan.
     public let largeFileThreshold: Int64
 
-    /// Files older than this many months (and >10MB) are also reported.
+    /// Files older than this many months (and >oldFileMinSize) are also reported.
     public let oldFileMonths: Int
 
-    public init(olderThanDays: Int = 30, largeFileThresholdMB: Int64 = 100, oldFileMonths: Int = 12) {
+    /// Minimum size in bytes for old files to be reported.
+    public let oldFileMinSize: Int64
+
+    public init(
+        olderThanDays: Int = 30,
+        largeFileThresholdMB: Int64? = nil,
+        oldFileMonths: Int? = nil,
+        oldFileMinSizeMB: Int64? = nil
+    ) {
         self.olderThanDays = olderThanDays
-        self.largeFileThreshold = max(1, largeFileThresholdMB) * 1024 * 1024
-        self.oldFileMonths = oldFileMonths
+
+        // Read from UserDefaults or use defaults
+        let defaults = UserDefaults.standard
+        let thresholdMB = largeFileThresholdMB ?? Int64(defaults.object(forKey: "settings.largeFileThresholdMB") as? Int ?? 100)
+        let months = oldFileMonths ?? defaults.object(forKey: "settings.oldFileMonths") as? Int ?? 12
+        let minSizeMB = oldFileMinSizeMB ?? Int64(defaults.object(forKey: "settings.oldFileMinSizeMB") as? Int ?? 10)
+
+        self.largeFileThreshold = max(1, thresholdMB) * 1024 * 1024
+        self.oldFileMonths = months
+        self.oldFileMinSize = max(1, minSizeMB) * 1024 * 1024
     }
 
     /// Scans the given category and returns eligible junk, largest first.
@@ -118,7 +134,7 @@ public struct JunkScanner {
     }
 
     /// Recursively finds individual files above the configured size threshold,
-    /// or files older than oldFileMonths that are larger than 10MB.
+    /// or files older than oldFileMonths that are larger than oldFileMinSize.
     private func scanLargeFiles() -> [JunkItem] {
         var items: [JunkItem] = []
         let home = FileManager.default.homeDirectoryForCurrentUser
@@ -133,7 +149,6 @@ public struct JunkScanner {
             value: -max(1, oldFileMonths),
             to: Date()
         ) ?? Date.distantPast
-        let minOldFileSize: Int64 = 10 * 1024 * 1024  // 10 MB
 
         for root in roots {
             guard let enumerator = FileManager.default.enumerator(
@@ -154,9 +169,9 @@ public struct JunkScanner {
                 let size = Int64(values.fileSize ?? 0)
                 let modDate = values.contentModificationDate
 
-                // Include if: size >= threshold OR (old enough AND > 10MB)
+                // Include if: size >= threshold OR (old enough AND >= oldFileMinSize)
                 let isLarge = size >= largeFileThreshold
-                let isOldAndBig = modDate != nil && modDate! < oldCutoff && size >= minOldFileSize
+                let isOldAndBig = modDate != nil && modDate! < oldCutoff && size >= oldFileMinSize
 
                 guard isLarge || isOldAndBig else { continue }
 
