@@ -15,7 +15,6 @@ final class CleanViewController: NSViewController {
     private let progressIndicator = NSProgressIndicator()
     private let loadingOverlay = NSView()
 
-    private let scanner = JunkScanner()
     private var itemsByCategory: [JunkCategory: [JunkItem]] = [:]
     private var currentCategory: JunkCategory?
     private var selectedIndexes: Set<Int> = []
@@ -47,6 +46,8 @@ final class CleanViewController: NSViewController {
         isLoading = true
         itemScroll.isHidden = false
         itemTableView.isHidden = false
+        // Force layout to ensure scroll view has frame before showing overlay
+        view.layoutSubtreeIfNeeded()
         loadingOverlay.isHidden = false
         progressIndicator.startAnimation(nil)
         itemTableView.reloadData()
@@ -54,7 +55,8 @@ final class CleanViewController: NSViewController {
         moveToTrashButton.isHidden = true
         statusLabel.stringValue = L("clean.status.scanning", category.localizedDisplayName)
 
-        let scanner = self.scanner
+        // Create new scanner to read latest settings from UserDefaults
+        let scanner = JunkScanner()
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let items = scanner.scan(category: category)
@@ -264,7 +266,6 @@ final class CleanViewController: NSViewController {
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         let itemsCopy = itemsToClean
-        let scanner = self.scanner
         let categoryCopy = category
 
         isLoading = true
@@ -273,6 +274,7 @@ final class CleanViewController: NSViewController {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let result = JunkCleaner().clean(itemsCopy)
+            let scanner = JunkScanner()
             let refreshed = scanner.scan(category: categoryCopy)
             DispatchQueue.main.async {
                 self?.isLoading = false
