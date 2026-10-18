@@ -5,37 +5,35 @@ import AppKit
 import PurgeMacCore
 
 /// Junk-cleanup section: scans one category at a time, shows checkable items,
-/// and moves the selected items (excluding large files) to the Trash.
+/// and moves the selected items to the Trash.
 final class CleanViewController: NSViewController {
-    private let categoryTableView = NSTableView()
     private let itemTableView = NSTableView()
     private let statusLabel = NSTextField(labelWithString: L("clean.status.initial"))
-    private let cleanButton = NSButton(title: L("clean.button.clean"), target: nil, action: nil)
+    private let selectAllCheckbox = NSButton(checkboxWithTitle: L("clean.selectAll"), target: nil, action: nil)
+    private let moveToTrashButton = NSButton(title: L("clean.button.moveToTrash"), target: nil, action: nil)
+    private let progressIndicator = NSProgressIndicator()
+    private let loadingOverlay = NSView()
 
     private let scanner = JunkScanner()
     private var itemsByCategory: [JunkCategory: [JunkItem]] = [:]
-    private var scannedCategories: Set<JunkCategory> = []
     private var currentCategory: JunkCategory?
     private var selectedIndexes: Set<Int> = []
-    private var currentMode: String = "cleanup"  // cleanup, clean.caches, clean.logs, clean.leftovers, clean.largeFiles
+    private var currentMode: String = "cleanup"
+    private var isLoading = false
 
-    /// Sets the cleanup mode based on sidebar selection.
     func setMode(_ identifier: String) {
         currentMode = identifier
-        // Reset state when mode changes
         currentCategory = nil
         selectedIndexes = []
         itemTableView.reloadData()
-        cleanButton.isEnabled = false
+        updateMoveToTrashButtonVisibility()
 
-        // Auto-scan if it's a specific category
         switch identifier {
         case "clean.caches":
             autoScanCategory(.userCaches)
         case "clean.logs":
             autoScanCategory(.logs)
         case "clean.leftovers":
-            // App leftovers is not yet implemented as a category, show placeholder
             statusLabel.stringValue = "App Leftovers - Coming Soon"
         case "clean.largeFiles":
             autoScanCategory(.largeFiles)
@@ -45,18 +43,29 @@ final class CleanViewController: NSViewController {
     }
 
     private func autoScanCategory(_ category: JunkCategory) {
+        isLoading = true
+        loadingOverlay.isHidden = false
+        progressIndicator.startAnimation(nil)
+        itemTableView.reloadData()
+        selectAllCheckbox.isHidden = true
+        moveToTrashButton.isHidden = true
         statusLabel.stringValue = L("clean.status.scanning", category.localizedDisplayName)
+
         let scanner = self.scanner
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let items = scanner.scan(category: category)
             DispatchQueue.main.async {
+                self?.isLoading = false
+                self?.progressIndicator.stopAnimation(nil)
+                self?.loadingOverlay.isHidden = true
                 self?.itemsByCategory[category] = items
-                self?.scannedCategories.insert(category)
                 self?.currentCategory = category
                 self?.selectedIndexes = []
-                self?.categoryTableView.reloadData()
-                self?.refreshItems(for: category)
+                self?.itemTableView.reloadData()
+                self?.updateSelectAllCheckboxState()
+                self?.updateMoveToTrashButtonVisibility()
+                self?.selectAllCheckbox.isHidden = items.isEmpty
                 self?.statusLabel.stringValue = category == .largeFiles
                     ? L("clean.status.largeFiles", items.count)
                     : L("clean.status.found", items.count, category.localizedDisplayName)
@@ -65,51 +74,19 @@ final class CleanViewController: NSViewController {
     }
 
     func reloadData() {
-        // Update column titles
-        if let nameColumn = categoryTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("name")) {
-            nameColumn.title = L("clean.column.category")
-        }
-        if let sizeColumn = categoryTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("size")) {
-            sizeColumn.title = L("clean.column.size")
-        }
         if let itemColumn = itemTableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("item")) {
             itemColumn.title = L("clean.column.items")
         }
-        // Update button title
-        cleanButton.title = L("clean.button.clean")
-        // Refresh status if not scanned
-        if currentCategory == nil {
+        setMoveToTrashButtonTitle()
+        selectAllCheckbox.title = L("clean.selectAll")
+        if currentCategory == nil && !isLoading {
             statusLabel.stringValue = L("clean.status.initial")
         }
-        // Reload tables
-        categoryTableView.reloadData()
         itemTableView.reloadData()
     }
 
     override func loadView() {
         let root = NSView()
-
-        categoryTableView.delegate = self
-        categoryTableView.dataSource = self
-        categoryTableView.allowsMultipleSelection = false
-        categoryTableView.usesAlternatingRowBackgroundColors = true
-
-        let categoryColumns: [(String, String, CGFloat)] = [
-            ("name", L("clean.column.category"), 200),
-            ("size", L("clean.column.size"), 140),
-            ("action", L("clean.column.action"), 100),
-        ]
-        for (identifier, title, width) in categoryColumns {
-            let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(identifier))
-            column.title = title
-            column.width = width
-            column.resizingMask = (identifier == "name") ? .autoresizingMask : .userResizingMask
-            categoryTableView.addTableColumn(column)
-        }
-
-        let categoryScroll = NSScrollView()
-        categoryScroll.documentView = categoryTableView
-        categoryScroll.hasVerticalScroller = true
 
         itemTableView.delegate = self
         itemTableView.dataSource = self
@@ -124,15 +101,33 @@ final class CleanViewController: NSViewController {
         itemScroll.documentView = itemTableView
         itemScroll.hasVerticalScroller = true
 
+        // Loading overlay with semi-transparent background
+        loadingOverlay.wantsLayer = true
+        loadingOverlay.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.7).cgColor
+        loadingOverlay.isHidden = true
+        loadingOverlay.translatesAutoresizingMaskIntoConstraints = false
+
+        progressIndicator.style = .spinning
+        progressIndicator.controlSize = .regular
+        progressIndicator.translatesAutoresizingMaskIntoConstraints = false
+        loadingOverlay.addSubview(progressIndicator)
+
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.lineBreakMode = .byTruncatingMiddle
         statusLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        cleanButton.target = self
-        cleanButton.action = #selector(cleanClicked)
-        cleanButton.bezelStyle = .rounded
-        cleanButton.isEnabled = false
+        selectAllCheckbox.target = self
+        selectAllCheckbox.action = #selector(selectAllToggled)
+        selectAllCheckbox.translatesAutoresizingMaskIntoConstraints = false
+        selectAllCheckbox.isHidden = true
+
+        setMoveToTrashButtonTitle()
+        moveToTrashButton.target = self
+        moveToTrashButton.action = #selector(moveToTrashClicked)
+        moveToTrashButton.bezelStyle = .rounded
+        moveToTrashButton.isHidden = true
+        moveToTrashButton.translatesAutoresizingMaskIntoConstraints = false
 
         // Listen for language changes
         NotificationCenter.default.addObserver(
@@ -142,29 +137,35 @@ final class CleanViewController: NSViewController {
             object: nil
         )
 
-        for subview in [categoryScroll, itemScroll, statusLabel, cleanButton] {
+        for subview in [statusLabel, selectAllCheckbox, moveToTrashButton, itemScroll, loadingOverlay] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(subview)
         }
 
         NSLayoutConstraint.activate([
-            categoryScroll.topAnchor.constraint(equalTo: root.topAnchor, constant: 12),
-            categoryScroll.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
-            categoryScroll.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
-            categoryScroll.heightAnchor.constraint(equalToConstant: 200),
+            statusLabel.topAnchor.constraint(equalTo: root.topAnchor, constant: 12),
+            statusLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
+            statusLabel.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
 
-            itemScroll.topAnchor.constraint(equalTo: categoryScroll.bottomAnchor, constant: 12),
+            selectAllCheckbox.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 8),
+            selectAllCheckbox.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
+
+            moveToTrashButton.centerYAnchor.constraint(equalTo: selectAllCheckbox.centerYAnchor),
+            moveToTrashButton.leadingAnchor.constraint(equalTo: selectAllCheckbox.trailingAnchor, constant: 12),
+            moveToTrashButton.widthAnchor.constraint(equalToConstant: 110),
+
+            itemScroll.topAnchor.constraint(equalTo: selectAllCheckbox.bottomAnchor, constant: 8),
             itemScroll.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
             itemScroll.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
-            itemScroll.bottomAnchor.constraint(equalTo: statusLabel.topAnchor, constant: -12),
+            itemScroll.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -12),
 
-            statusLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
-            statusLabel.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -12),
+            loadingOverlay.topAnchor.constraint(equalTo: itemScroll.topAnchor),
+            loadingOverlay.leadingAnchor.constraint(equalTo: itemScroll.leadingAnchor),
+            loadingOverlay.trailingAnchor.constraint(equalTo: itemScroll.trailingAnchor),
+            loadingOverlay.bottomAnchor.constraint(equalTo: itemScroll.bottomAnchor),
 
-            cleanButton.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
-            cleanButton.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -12),
-            cleanButton.widthAnchor.constraint(equalToConstant: 96),
-            cleanButton.leadingAnchor.constraint(greaterThanOrEqualTo: statusLabel.trailingAnchor, constant: 12),
+            progressIndicator.centerXAnchor.constraint(equalTo: loadingOverlay.centerXAnchor),
+            progressIndicator.centerYAnchor.constraint(equalTo: loadingOverlay.centerYAnchor),
         ])
 
         view = root
@@ -174,56 +175,70 @@ final class CleanViewController: NSViewController {
         reloadData()
     }
 
-    // MARK: - Scanning
+    private func setMoveToTrashButtonTitle() {
+        let title = L("clean.button.moveToTrash")
+        let attrs: [NSAttributedString.Key: Any] = [
+            .foregroundColor: NSColor.systemRed
+        ]
+        moveToTrashButton.attributedTitle = NSAttributedString(string: title, attributes: attrs)
+    }
 
-    @objc private func scanCategoryClicked(_ sender: NSButton) {
-        let categories = JunkCategory.allCases
-        guard sender.tag >= 0, sender.tag < categories.count else { return }
-        let category = categories[sender.tag]
+    @objc private func selectAllToggled(_ sender: NSButton) {
+        guard let category = currentCategory else { return }
+        let items = itemsByCategory[category] ?? []
+        if sender.state == .on {
+            selectedIndexes = Set(0..<items.count)
+        } else {
+            selectedIndexes.removeAll()
+        }
+        itemTableView.reloadData()
+        updateMoveToTrashButtonVisibility()
+    }
 
-        statusLabel.stringValue = L("clean.status.scanning", category.localizedDisplayName)
-        let scanner = self.scanner
-
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let items = scanner.scan(category: category)
-            DispatchQueue.main.async {
-                self?.itemsByCategory[category] = items
-                self?.scannedCategories.insert(category)
-                self?.currentCategory = category
-                self?.selectedIndexes = []
-                self?.categoryTableView.reloadData()
-                self?.refreshItems(for: category)
-                self?.statusLabel.stringValue = category == .largeFiles
-                    ? L("clean.status.largeFiles", items.count)
-                    : L("clean.status.found", items.count, category.localizedDisplayName)
-            }
+    private func updateSelectAllCheckboxState() {
+        guard let category = currentCategory else {
+            selectAllCheckbox.state = .off
+            selectAllCheckbox.isEnabled = false
+            return
+        }
+        let items = itemsByCategory[category] ?? []
+        if items.isEmpty {
+            selectAllCheckbox.state = .off
+            selectAllCheckbox.isEnabled = false
+        } else if selectedIndexes.count == items.count {
+            selectAllCheckbox.state = .on
+            selectAllCheckbox.isEnabled = true
+        } else if selectedIndexes.isEmpty {
+            selectAllCheckbox.state = .off
+            selectAllCheckbox.isEnabled = true
+        } else {
+            selectAllCheckbox.state = .mixed
+            selectAllCheckbox.isEnabled = true
         }
     }
 
-    private func refreshItems(for category: JunkCategory) {
-        let items = itemsByCategory[category] ?? []
-        itemTableView.reloadData()
-        cleanButton.isEnabled = !items.isEmpty && category != .largeFiles
+    private func updateMoveToTrashButtonVisibility() {
+        moveToTrashButton.isHidden = selectedIndexes.isEmpty
     }
 
-    // MARK: - Clean
+    @objc private func itemCheckboxToggled(_ sender: NSButton) {
+        if sender.state == .on {
+            selectedIndexes.insert(sender.tag)
+        } else {
+            selectedIndexes.remove(sender.tag)
+        }
+        updateSelectAllCheckboxState()
+        updateMoveToTrashButtonVisibility()
+    }
 
-    @objc private func cleanClicked() {
-        guard let category = currentCategory, category != .largeFiles else { return }
+    @objc private func moveToTrashClicked() {
+        guard let category = currentCategory else { return }
         let items = itemsByCategory[category] ?? []
         let itemsToClean = items.enumerated()
             .filter { selectedIndexes.contains($0.offset) }
             .map(\.element)
 
-        guard !itemsToClean.isEmpty else {
-            let alert = NSAlert()
-            alert.messageText = L("clean.alert.noSelection.title")
-            alert.informativeText = L("clean.alert.noSelection.message")
-            alert.alertStyle = .informational
-            alert.addButton(withTitle: L("uninstall.alert.ok"))
-            alert.runModal()
-            return
-        }
+        guard !itemsToClean.isEmpty else { return }
 
         let alert = NSAlert()
         alert.messageText = L("clean.alert.confirm.title", itemsToClean.count)
@@ -235,42 +250,24 @@ final class CleanViewController: NSViewController {
 
         let itemsCopy = itemsToClean
         let scanner = self.scanner
+        let categoryCopy = category
+
+        isLoading = true
+        loadingOverlay.isHidden = false
+        progressIndicator.startAnimation(nil)
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let result = JunkCleaner().clean(itemsCopy)
-            let refreshed = scanner.scan(category: category)
+            let refreshed = scanner.scan(category: categoryCopy)
             DispatchQueue.main.async {
+                self?.isLoading = false
+                self?.progressIndicator.stopAnimation(nil)
+                self?.loadingOverlay.isHidden = true
                 self?.selectedIndexes = []
-                self?.itemsByCategory[category] = refreshed
-                self?.refreshItems(for: category)
-                self?.categoryTableView.reloadData()
-                self?.statusLabel.stringValue = L("clean.status.freed", Self.formatBytes(result.freedBytes))
-            }
-        }
-    }
-
-    @objc private func deleteLargeFileClicked(_ sender: NSButton) {
-        guard let category = currentCategory else { return }
-        let items = itemsByCategory[category] ?? []
-        guard sender.tag >= 0, sender.tag < items.count else { return }
-        let item = items[sender.tag]
-
-        let alert = NSAlert()
-        alert.messageText = L("clean.alert.move.title")
-        alert.informativeText = item.path
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: L("clean.button.moveToTrash"))
-        alert.addButton(withTitle: L("uninstall.alert.confirm.cancel"))
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
-
-        let scanner = self.scanner
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let result = JunkCleaner().clean([item])
-            let refreshed = scanner.scan(category: category)
-            DispatchQueue.main.async {
-                self?.itemsByCategory[category] = refreshed
-                self?.refreshItems(for: category)
-                self?.categoryTableView.reloadData()
+                self?.itemsByCategory[categoryCopy] = refreshed
+                self?.itemTableView.reloadData()
+                self?.updateSelectAllCheckboxState()
+                self?.updateMoveToTrashButtonVisibility()
                 self?.statusLabel.stringValue = L("clean.status.freed", Self.formatBytes(result.freedBytes))
             }
         }
@@ -287,64 +284,11 @@ final class CleanViewController: NSViewController {
 
 extension CleanViewController: NSTableViewDataSource, NSTableViewDelegate {
     func numberOfRows(in tableView: NSTableView) -> Int {
-        if tableView === categoryTableView {
-            // If in a specific sub-mode, hide the category list
-            switch currentMode {
-            case "clean.caches", "clean.logs", "clean.leftovers", "clean.largeFiles":
-                return 0
-            default:
-                return JunkCategory.allCases.count
-            }
-        }
         guard let category = currentCategory else { return 0 }
         return itemsByCategory[category]?.count ?? 0
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        if tableView === categoryTableView {
-            return categoryCellView(for: tableColumn, row: row)
-        }
-        return itemCellView(row: row)
-    }
-
-    private func categoryCellView(for tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        guard let tableColumn else { return nil }
-        let category = JunkCategory.allCases[row]
-        let identifier = tableColumn.identifier
-
-        if identifier.rawValue == "action" {
-            let button = NSButton(title: L("clean.button.scan"), target: self, action: #selector(scanCategoryClicked))
-            button.bezelStyle = .rounded
-            button.tag = row
-            return button
-        }
-
-        let cell = NSTableCellView()
-        let textField = NSTextField(labelWithString: "")
-        textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.lineBreakMode = .byTruncatingTail
-        cell.addSubview(textField)
-        cell.textField = textField
-        NSLayoutConstraint.activate([
-            textField.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
-            textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
-            textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-        ])
-
-        if identifier.rawValue == "name" {
-            textField.stringValue = category.localizedDisplayName
-        } else {
-            if scannedCategories.contains(category) {
-                let total = JunkScanner.totalSize(of: itemsByCategory[category] ?? [])
-                textField.stringValue = Self.formatBytes(total)
-            } else {
-                textField.stringValue = L("junk.notScanned")
-            }
-        }
-        return cell
-    }
-
-    private func itemCellView(row: Int) -> NSView? {
         guard let category = currentCategory,
               let items = itemsByCategory[category],
               row < items.count else {
@@ -352,42 +296,10 @@ extension CleanViewController: NSTableViewDataSource, NSTableViewDelegate {
         }
         let item = items[row]
 
-        if category == .largeFiles {
-            let container = NSView()
-            let label = NSTextField(labelWithString: "\(item.path) — \(Self.formatBytes(item.size))")
-            label.translatesAutoresizingMaskIntoConstraints = false
-            label.lineBreakMode = .byTruncatingMiddle
-
-            let deleteButton = NSButton(title: L("clean.button.moveToTrash"), target: self, action: #selector(deleteLargeFileClicked))
-            deleteButton.bezelStyle = .rounded
-            deleteButton.tag = row
-            deleteButton.translatesAutoresizingMaskIntoConstraints = false
-
-            container.addSubview(label)
-            container.addSubview(deleteButton)
-            NSLayoutConstraint.activate([
-                label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 4),
-                label.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-                label.trailingAnchor.constraint(lessThanOrEqualTo: deleteButton.leadingAnchor, constant: -12),
-
-                deleteButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -4),
-                deleteButton.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-            ])
-            return container
-        }
-
         let checkbox = NSButton(checkboxWithTitle: "", target: self, action: #selector(itemCheckboxToggled(_:)))
-        checkbox.title = "[\(category.rawValue)] \(item.path) — \(Self.formatBytes(item.size))"
+        checkbox.title = "\(item.path) — \(Self.formatBytes(item.size))"
         checkbox.tag = row
         checkbox.state = selectedIndexes.contains(row) ? .on : .off
         return checkbox
-    }
-
-    @objc private func itemCheckboxToggled(_ sender: NSButton) {
-        if sender.state == .on {
-            selectedIndexes.insert(sender.tag)
-        } else {
-            selectedIndexes.remove(sender.tag)
-        }
     }
 }
