@@ -62,7 +62,7 @@ final class SidebarViewController: NSViewController {
     private func rebuildItems() {
         rootItems = [
             SidebarItem(title: L("sidebar.uninstall"), identifier: "uninstall", iconName: "trash.fill"),
-            SidebarItem(title: L("sidebar.cleanup"), identifier: "cleanup", iconName: "broom.fill", children: [
+            SidebarItem(title: L("sidebar.cleanup"), identifier: "cleanup", iconName: "trash.circle.fill", children: [
                 SidebarItem(title: L("sidebar.clean.caches"), identifier: "clean.caches", iconName: "folder.fill.badge.gearshape"),
                 SidebarItem(title: L("sidebar.clean.logs"), identifier: "clean.logs", iconName: "doc.text.fill"),
                 SidebarItem(title: L("sidebar.clean.leftovers"), identifier: "clean.leftovers", iconName: "tray.2.fill"),
