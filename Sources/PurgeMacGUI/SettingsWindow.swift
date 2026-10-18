@@ -34,7 +34,7 @@ final class SettingsWindow: NSWindow {
 
         let screenFrame = NSScreen.main?.visibleFrame ?? .zero
         let width: CGFloat = 550
-        let height: CGFloat = 420
+        let height: CGFloat = 500
         let x = screenFrame.midX - width / 2
         let y = screenFrame.midY - height / 2
         let frame = NSRect(x: x, y: y, width: width, height: height)
@@ -192,33 +192,30 @@ final class SettingsWindow: NSWindow {
         thresholdRow.spacing = 4
         stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.threshold"), control: thresholdRow))
 
-        // Old file months
+        // Old file months with minimum size
         let oldFileMonthsField = NSTextField()
         oldFileMonthsField.placeholderString = "12"
         oldFileMonthsField.stringValue = String(UserDefaults.standard.integer(forKey: "settings.oldFileMonths"))
         oldFileMonthsField.target = self
         oldFileMonthsField.action = #selector(oldFileMonthsChanged(_:))
-        oldFileMonthsField.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        oldFileMonthsField.widthAnchor.constraint(equalToConstant: 60).isActive = true
 
         let monthsLabel = NSTextField(labelWithString: L("settings.largeFiles.months"))
-        let monthsRow = NSStackView(views: [oldFileMonthsField, monthsLabel])
-        monthsRow.orientation = .horizontal
-        monthsRow.spacing = 4
-        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.oldFiles"), control: monthsRow))
-
-        // Old file minimum size
+        
+        // Old file minimum size on same line
         let oldFileMinSizeField = NSTextField()
         oldFileMinSizeField.placeholderString = "10"
         oldFileMinSizeField.stringValue = String(UserDefaults.standard.integer(forKey: "settings.oldFileMinSizeMB"))
         oldFileMinSizeField.target = self
         oldFileMinSizeField.action = #selector(oldFileMinSizeChanged(_:))
-        oldFileMinSizeField.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        oldFileMinSizeField.widthAnchor.constraint(equalToConstant: 60).isActive = true
 
-        let minMbLabel = NSTextField(labelWithString: "MB")
-        let minSizeRow = NSStackView(views: [oldFileMinSizeField, minMbLabel])
-        minSizeRow.orientation = .horizontal
-        minSizeRow.spacing = 4
-        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.oldMinSize"), control: minSizeRow))
+        let minMbLabel = NSTextField(labelWithString: L("settings.largeFiles.oldMinSize"))
+        
+        let monthsRow = NSStackView(views: [oldFileMonthsField, monthsLabel, oldFileMinSizeField, minMbLabel])
+        monthsRow.orientation = .horizontal
+        monthsRow.spacing = 4
+        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.oldFiles"), control: monthsRow))
 
         // Scan directories section
         let scanDirsLabel = NSTextField(labelWithString: L("settings.largeFiles.scanDirs"))
@@ -235,14 +232,16 @@ final class SettingsWindow: NSWindow {
         scanDirsTableView.usesAlternatingRowBackgroundColors = true
         let scanDirColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
         scanDirColumn.title = ""
-        scanDirColumn.width = 460
+        scanDirColumn.width = 500
+        scanDirColumn.resizingMask = .autoresizingMask
         scanDirsTableView.addTableColumn(scanDirColumn)
 
         let scanScroll = NSScrollView()
         scanScroll.documentView = scanDirsTableView
         scanScroll.hasVerticalScroller = true
         scanScroll.translatesAutoresizingMaskIntoConstraints = false
-        scanScroll.heightAnchor.constraint(equalToConstant: 120).isActive = true
+        scanScroll.heightAnchor.constraint(equalToConstant: 100).isActive = true
+        scanScroll.widthAnchor.constraint(equalToConstant: 500).isActive = true
 
         // Add/Remove buttons for scan dirs
         let addScanDirButton = NSButton(title: L("settings.button.add"), target: self, action: #selector(addScanDirClicked))
@@ -256,6 +255,7 @@ final class SettingsWindow: NSWindow {
         let scanDirsContainer = NSStackView(views: [scanScroll, scanButtonsRow])
         scanDirsContainer.orientation = .vertical
         scanDirsContainer.spacing = 8
+        scanDirsContainer.alignment = .leading
         stack.addArrangedSubview(scanDirsContainer)
 
         // Excluded directories section
@@ -273,14 +273,16 @@ final class SettingsWindow: NSWindow {
         excludedDirsTableView.usesAlternatingRowBackgroundColors = true
         let excludedDirColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
         excludedDirColumn.title = ""
-        excludedDirColumn.width = 460
+        excludedDirColumn.width = 500
+        excludedDirColumn.resizingMask = .autoresizingMask
         excludedDirsTableView.addTableColumn(excludedDirColumn)
 
         let excludedScroll = NSScrollView()
         excludedScroll.documentView = excludedDirsTableView
         excludedScroll.hasVerticalScroller = true
         excludedScroll.translatesAutoresizingMaskIntoConstraints = false
-        excludedScroll.heightAnchor.constraint(equalToConstant: 120).isActive = true
+        excludedScroll.heightAnchor.constraint(equalToConstant: 100).isActive = true
+        excludedScroll.widthAnchor.constraint(equalToConstant: 500).isActive = true
 
         // Add/Remove buttons for excluded dirs
         let addExcludedDirButton = NSButton(title: L("settings.button.add"), target: self, action: #selector(addExcludedDirClicked))

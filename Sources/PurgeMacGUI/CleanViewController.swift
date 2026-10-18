@@ -137,7 +137,7 @@ final class CleanViewController: NSViewController {
             object: nil
         )
 
-        for subview in [statusLabel, selectAllCheckbox, moveToTrashButton, itemScroll] {
+        for subview in [statusLabel, selectAllCheckbox, moveToTrashButton, itemScroll, loadingOverlay] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(subview)
         }
@@ -158,12 +158,7 @@ final class CleanViewController: NSViewController {
             itemScroll.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
             itemScroll.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
             itemScroll.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -12),
-        ])
 
-        // Add loading overlay on top of itemScroll
-        loadingOverlay.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(loadingOverlay)
-        NSLayoutConstraint.activate([
             loadingOverlay.topAnchor.constraint(equalTo: itemScroll.topAnchor),
             loadingOverlay.leadingAnchor.constraint(equalTo: itemScroll.leadingAnchor),
             loadingOverlay.trailingAnchor.constraint(equalTo: itemScroll.trailingAnchor),
