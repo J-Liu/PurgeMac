@@ -11,6 +11,10 @@ final class SettingsWindow: NSWindow {
     private var generalTab: NSView!
     private var aboutTab: NSView!
     private var languagePopup: NSPopUpButton!
+    private var scanDirsTableView: NSTableView!
+    private var excludedDirsTableView: NSTableView!
+    private var scanDirs: [String] = []
+    private var excludedDirs: [String] = []
 
     // Layout constants
     private let labelWidth: CGFloat = 100
@@ -18,9 +22,18 @@ final class SettingsWindow: NSWindow {
     private let rowSpacing: CGFloat = 16
 
     init() {
+        // Register defaults
+        UserDefaults.standard.register(defaults: [
+            "settings.largeFileThresholdMB": 100,
+            "settings.oldFileMonths": 12,
+            "settings.oldFileMinSizeMB": 10,
+            "settings.largeFileScanDirs": ["~/Downloads", "~/Documents", "~/Desktop"],
+            "settings.largeFileExcludedDirs": []
+        ])
+
         let screenFrame = NSScreen.main?.visibleFrame ?? .zero
-        let width: CGFloat = 500
-        let height: CGFloat = 400
+        let width: CGFloat = 550
+        let height: CGFloat = 520
         let x = screenFrame.midX - width / 2
         let y = screenFrame.midY - height / 2
         let frame = NSRect(x: x, y: y, width: width, height: height)
@@ -34,7 +47,7 @@ final class SettingsWindow: NSWindow {
 
         self.title = L("settings.title")
         self.isReleasedWhenClosed = false
-        self.minSize = NSSize(width: 400, height: 300)
+        self.minSize = NSSize(width: 450, height: 400)
 
         setupUI()
         setupKeyHandlers()
@@ -206,30 +219,76 @@ final class SettingsWindow: NSWindow {
         scanDirsLabel.font = .systemFont(ofSize: 13, weight: .semibold)
         stack.addArrangedSubview(scanDirsLabel)
 
-        // Scan directories list
-        let scanDirsArray = UserDefaults.standard.stringArray(forKey: "settings.largeFileScanDirs") ?? ["~/Downloads", "~/Documents", "~/Desktop"]
-        let scanDirsField = NSTextField()
-        scanDirsField.stringValue = scanDirsArray.joined(separator: ", ")
-        scanDirsField.placeholderString = "~/Downloads, ~/Documents, ~/Desktop"
-        scanDirsField.target = self
-        scanDirsField.action = #selector(scanDirsChanged(_:))
-        scanDirsField.widthAnchor.constraint(equalToConstant: 280).isActive = true
-        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.directories"), control: scanDirsField))
+        // Load scan dirs
+        scanDirs = UserDefaults.standard.stringArray(forKey: "settings.largeFileScanDirs") ?? ["~/Downloads", "~/Documents", "~/Desktop"]
+
+        // Scan directories table
+        scanDirsTableView = NSTableView()
+        scanDirsTableView.delegate = self
+        scanDirsTableView.dataSource = self
+        scanDirsTableView.usesAlternatingRowBackgroundColors = true
+        let scanDirColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
+        scanDirColumn.title = L("settings.largeFiles.directories")
+        scanDirColumn.width = 320
+        scanDirsTableView.addTableColumn(scanDirColumn)
+
+        let scanScroll = NSScrollView()
+        scanScroll.documentView = scanDirsTableView
+        scanScroll.hasVerticalScroller = true
+        scanScroll.translatesAutoresizingMaskIntoConstraints = false
+        scanScroll.heightAnchor.constraint(equalToConstant: 80).isActive = true
+
+        // Add/Remove buttons for scan dirs
+        let addScanDirButton = NSButton(title: L("settings.button.add"), target: self, action: #selector(addScanDirClicked))
+        addScanDirButton.bezelStyle = .rounded
+        let removeScanDirButton = NSButton(title: L("settings.button.remove"), target: self, action: #selector(removeScanDirClicked))
+        removeScanDirButton.bezelStyle = .rounded
+        let scanButtonsRow = NSStackView(views: [addScanDirButton, removeScanDirButton])
+        scanButtonsRow.orientation = .horizontal
+        scanButtonsRow.spacing = 8
+
+        let scanDirsContainer = NSStackView(views: [scanScroll, scanButtonsRow])
+        scanDirsContainer.orientation = .vertical
+        scanDirsContainer.spacing = 8
+        stack.addArrangedSubview(scanDirsContainer)
 
         // Excluded directories section
         let excludedLabel = NSTextField(labelWithString: L("settings.largeFiles.excludedDirs"))
         excludedLabel.font = .systemFont(ofSize: 13, weight: .semibold)
         stack.addArrangedSubview(excludedLabel)
 
-        // Excluded directories list
-        let excludedArray = UserDefaults.standard.stringArray(forKey: "settings.largeFileExcludedDirs") ?? []
-        let excludedField = NSTextField()
-        excludedField.stringValue = excludedArray.joined(separator: ", ")
-        excludedField.placeholderString = "~/VirtualBox VMs, ~/Projects"
-        excludedField.target = self
-        excludedField.action = #selector(excludedDirsChanged(_:))
-        excludedField.widthAnchor.constraint(equalToConstant: 280).isActive = true
-        stack.addArrangedSubview(makeRow(label: L("settings.largeFiles.excluded"), control: excludedField))
+        // Load excluded dirs
+        excludedDirs = UserDefaults.standard.stringArray(forKey: "settings.largeFileExcludedDirs") ?? []
+
+        // Excluded directories table
+        excludedDirsTableView = NSTableView()
+        excludedDirsTableView.delegate = self
+        excludedDirsTableView.dataSource = self
+        excludedDirsTableView.usesAlternatingRowBackgroundColors = true
+        let excludedDirColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("path"))
+        excludedDirColumn.title = L("settings.largeFiles.excluded")
+        excludedDirColumn.width = 320
+        excludedDirsTableView.addTableColumn(excludedDirColumn)
+
+        let excludedScroll = NSScrollView()
+        excludedScroll.documentView = excludedDirsTableView
+        excludedScroll.hasVerticalScroller = true
+        excludedScroll.translatesAutoresizingMaskIntoConstraints = false
+        excludedScroll.heightAnchor.constraint(equalToConstant: 80).isActive = true
+
+        // Add/Remove buttons for excluded dirs
+        let addExcludedDirButton = NSButton(title: L("settings.button.add"), target: self, action: #selector(addExcludedDirClicked))
+        addExcludedDirButton.bezelStyle = .rounded
+        let removeExcludedDirButton = NSButton(title: L("settings.button.remove"), target: self, action: #selector(removeExcludedDirClicked))
+        removeExcludedDirButton.bezelStyle = .rounded
+        let excludedButtonsRow = NSStackView(views: [addExcludedDirButton, removeExcludedDirButton])
+        excludedButtonsRow.orientation = .horizontal
+        excludedButtonsRow.spacing = 8
+
+        let excludedDirsContainer = NSStackView(views: [excludedScroll, excludedButtonsRow])
+        excludedDirsContainer.orientation = .vertical
+        excludedDirsContainer.spacing = 8
+        stack.addArrangedSubview(excludedDirsContainer)
 
         return wrapInTopAlignedContainer(stack)
     }
@@ -357,20 +416,76 @@ final class SettingsWindow: NSWindow {
         UserDefaults.standard.set(max(1, value), forKey: "settings.oldFileMinSizeMB")
     }
 
-    @objc private func scanDirsChanged(_ sender: NSTextField) {
-        let dirs = sender.stringValue
-            .components(separatedBy: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        UserDefaults.standard.set(dirs, forKey: "settings.largeFileScanDirs")
+    @objc private func addScanDirClicked() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.message = L("settings.selectDirectory")
+
+        if panel.runModal() == .OK {
+            for url in panel.urls {
+                let path = url.path
+                if !scanDirs.contains(path) {
+                    scanDirs.append(path)
+                }
+            }
+            saveScanDirs()
+            scanDirsTableView.reloadData()
+        }
     }
 
-    @objc private func excludedDirsChanged(_ sender: NSTextField) {
-        let dirs = sender.stringValue
-            .components(separatedBy: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        UserDefaults.standard.set(dirs, forKey: "settings.largeFileExcludedDirs")
+    @objc private func removeScanDirClicked() {
+        let selected = scanDirsTableView.selectedRowIndexes
+        var newDirs: [String] = []
+        for (index, dir) in scanDirs.enumerated() {
+            if !selected.contains(index) {
+                newDirs.append(dir)
+            }
+        }
+        scanDirs = newDirs
+        saveScanDirs()
+        scanDirsTableView.reloadData()
+    }
+
+    private func saveScanDirs() {
+        UserDefaults.standard.set(scanDirs, forKey: "settings.largeFileScanDirs")
+    }
+
+    @objc private func addExcludedDirClicked() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.message = L("settings.selectDirectory")
+
+        if panel.runModal() == .OK {
+            for url in panel.urls {
+                let path = url.path
+                if !excludedDirs.contains(path) {
+                    excludedDirs.append(path)
+                }
+            }
+            saveExcludedDirs()
+            excludedDirsTableView.reloadData()
+        }
+    }
+
+    @objc private func removeExcludedDirClicked() {
+        let selected = excludedDirsTableView.selectedRowIndexes
+        var newDirs: [String] = []
+        for (index, dir) in excludedDirs.enumerated() {
+            if !selected.contains(index) {
+                newDirs.append(dir)
+            }
+        }
+        excludedDirs = newDirs
+        saveExcludedDirs()
+        excludedDirsTableView.reloadData()
+    }
+
+    private func saveExcludedDirs() {
+        UserDefaults.standard.set(excludedDirs, forKey: "settings.largeFileExcludedDirs")
     }
 
     @objc private func checkForUpdatesNow() {
@@ -384,5 +499,53 @@ final class SettingsWindow: NSWindow {
         if let url = URL(string: "https://github.com/J-Liu/PurgeMac") {
             NSWorkspace.shared.open(url)
         }
+    }
+}
+
+// MARK: - Table View Data Source and Delegate
+
+extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
+    func numberOfRows(in tableView: NSTableView) -> Int {
+        if tableView === scanDirsTableView {
+            return scanDirs.count
+        }
+        return excludedDirs.count
+    }
+
+    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+        let cell = NSTableCellView()
+        let path: String
+        if tableView === scanDirsTableView {
+            guard row < scanDirs.count else { return nil }
+            path = scanDirs[row]
+        } else {
+            guard row < excludedDirs.count else { return nil }
+            path = excludedDirs[row]
+        }
+
+        let imageView = NSImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.image = NSWorkspace.shared.icon(forFile: path)
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        cell.addSubview(imageView)
+
+        let textField = NSTextField(labelWithString: path)
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        textField.lineBreakMode = .byTruncatingMiddle
+        cell.addSubview(textField)
+        cell.textField = textField
+
+        NSLayoutConstraint.activate([
+            imageView.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
+            imageView.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+            imageView.widthAnchor.constraint(equalToConstant: 16),
+            imageView.heightAnchor.constraint(equalToConstant: 16),
+
+            textField.leadingAnchor.constraint(equalTo: imageView.trailingAnchor, constant: 4),
+            textField.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
+            textField.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+        ])
+
+        return cell
     }
 }

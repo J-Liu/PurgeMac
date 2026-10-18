@@ -105,6 +105,9 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.largeFiles.directories": "Directories:",
         "settings.largeFiles.excludedDirs": "Excluded Directories",
         "settings.largeFiles.excluded": "Exclude:",
+        "settings.button.add": "Add",
+        "settings.button.remove": "Remove",
+        "settings.selectDirectory": "Select a directory",
 
         // Sidebar
         "sidebar.uninstall": "Uninstaller",
@@ -199,6 +202,9 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.largeFiles.directories": "目录：",
         "settings.largeFiles.excludedDirs": "忽略目录",
         "settings.largeFiles.excluded": "忽略：",
+        "settings.button.add": "添加",
+        "settings.button.remove": "移除",
+        "settings.selectDirectory": "选择目录",
 
         // Sidebar
         "sidebar.uninstall": "卸载器",
@@ -293,6 +299,9 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "settings.largeFiles.directories": "目錄：",
         "settings.largeFiles.excludedDirs": "忽略目錄",
         "settings.largeFiles.excluded": "忽略：",
+        "settings.button.add": "新增",
+        "settings.button.remove": "移除",
+        "settings.selectDirectory": "選擇目錄",
 
         // Sidebar
         "sidebar.uninstall": "卸載器",
