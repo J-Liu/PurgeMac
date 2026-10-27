@@ -157,57 +157,81 @@ public struct JunkScanner {
 
     // MARK: - Log scanning
 
-    /// Scans user logs directory.
+    /// Scans logs and junk items based on PureMac's junk category.
     private func scanLogs() -> [JunkItem] {
         var items: [JunkItem] = []
-        let logsURL = libraryPath("Logs")
 
-        guard let entries = try? FileManager.default.contentsOfDirectory(
-            at: logsURL,
-            includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]
-        ) else {
-            return items
+        // Define targets similar to PureMac's junk category
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let h: (String) -> String = { "\(home)/\($0)" }
+
+        struct LogTarget {
+            let name: String
+            let path: String
+            let scanContents: Bool
+            let selectedByDefault: Bool
         }
 
-        for entry in entries {
-            let attributes = Self.attributes(for: entry)
-            guard attributes.size > 0 else { continue }
-
-            // Determine if safe to select by default
-            let name = entry.lastPathComponent
-            let selectedByDefault = shouldSelectLogByDefault(name: name)
-
-            items.append(
-                JunkItem(
-                    path: entry.path,
-                    size: attributes.size,
-                    category: .logs,
-                    lastAccessDate: attributes.lastAccessDate,
-                    selectedByDefault: selectedByDefault
-                )
-            )
-        }
-
-        return items.sorted { $0.size > $1.size }
-    }
-
-    /// Determines if a log directory should be selected by default.
-    private func shouldSelectLogByDefault(name: String) -> Bool {
-        // Some logs might be actively used or important for debugging
-        let importantLogs = [
-            "com.apple.diagnostics",
-            "com.apple.reportstability",
+        let targets: [LogTarget] = [
+            // User logs - scan contents
+            LogTarget(name: "User Logs", path: h("Library/Logs"), scanContents: true, selectedByDefault: true),
+            // Saved application state - not selected by default
+            LogTarget(name: "Saved Application State", path: h("Library/Saved Application State"), scanContents: true, selectedByDefault: false),
+            // Xcode items
+            LogTarget(name: "Xcode DerivedData", path: h("Library/Developer/Xcode/DerivedData"), scanContents: false, selectedByDefault: true),
+            LogTarget(name: "Xcode Archives", path: h("Library/Developer/Xcode/Archives"), scanContents: false, selectedByDefault: false),
+            LogTarget(name: "iOS DeviceSupport", path: h("Library/Developer/Xcode/iOS DeviceSupport"), scanContents: false, selectedByDefault: true),
+            LogTarget(name: "watchOS DeviceSupport", path: h("Library/Developer/Xcode/watchOS DeviceSupport"), scanContents: false, selectedByDefault: true),
+            LogTarget(name: "tvOS DeviceSupport", path: h("Library/Developer/Xcode/tvOS DeviceSupport"), scanContents: false, selectedByDefault: true),
+            LogTarget(name: "CoreSimulator Caches", path: h("Library/Developer/CoreSimulator/Caches"), scanContents: false, selectedByDefault: true),
+            LogTarget(name: "Xcode App Cache", path: h("Library/Caches/com.apple.dt.Xcode"), scanContents: false, selectedByDefault: true),
+            LogTarget(name: "XCTestDevices", path: h("Library/Developer/XCTestDevices"), scanContents: false, selectedByDefault: true),
+            LogTarget(name: "SwiftUI Previews", path: h("Library/Developer/Xcode/UserData/Previews"), scanContents: false, selectedByDefault: true),
         ]
 
-        for prefix in importantLogs {
-            if name.hasPrefix(prefix) {
-                return false
+        for target in targets {
+            if target.scanContents {
+                // Scan children of the directory
+                let dirURL = URL(fileURLWithPath: target.path)
+                guard let entries = try? FileManager.default.contentsOfDirectory(
+                    at: dirURL,
+                    includingPropertiesForKeys: nil,
+                    options: [.skipsHiddenFiles]
+                ) else { continue }
+
+                for entry in entries {
+                    let attributes = Self.attributes(for: entry)
+                    guard attributes.size > 0 else { continue }
+
+                    items.append(
+                        JunkItem(
+                            path: entry.path,
+                            size: attributes.size,
+                            category: .logs,
+                            lastAccessDate: attributes.lastAccessDate,
+                            selectedByDefault: target.selectedByDefault
+                        )
+                    )
+                }
+            } else {
+                // Treat the path itself as a single item
+                let url = URL(fileURLWithPath: target.path)
+                let attributes = Self.attributes(for: url)
+                guard attributes.size > 0 else { continue }
+
+                items.append(
+                    JunkItem(
+                        path: target.path,
+                        size: attributes.size,
+                        category: .logs,
+                        lastAccessDate: attributes.lastAccessDate,
+                        selectedByDefault: target.selectedByDefault
+                    )
+                )
             }
         }
 
-        // Most logs are safe to clean
-        return true
+        return items.sorted { $0.size > $1.size }
     }
 
     /// The total size in bytes across the given junk items.
