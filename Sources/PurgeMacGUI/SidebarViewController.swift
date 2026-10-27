@@ -67,6 +67,17 @@ final class SidebarViewController: NSViewController {
                 SidebarItem(title: L("sidebar.clean.logs"), identifier: "clean.logs", iconName: "doc.text.fill"),
                 SidebarItem(title: L("sidebar.clean.leftovers"), identifier: "clean.leftovers", iconName: "tray.2.fill"),
                 SidebarItem(title: L("sidebar.clean.largeFiles"), identifier: "clean.largeFiles", iconName: "externaldrive.fill"),
+            ]),
+            SidebarItem(title: L("sidebar.developer"), identifier: "developer", iconName: "hammer.fill", children: [
+                SidebarItem(title: L("sidebar.dev.xcode"), identifier: "dev.xcode", iconName: "app.fill"),
+                SidebarItem(title: L("sidebar.dev.homebrew"), identifier: "dev.homebrew", iconName: "mug.fill"),
+                SidebarItem(title: L("sidebar.dev.node"), identifier: "dev.node", iconName: "cube.fill"),
+                SidebarItem(title: L("sidebar.dev.python"), identifier: "dev.python", iconName: "chevron.left.forwardslash.chevron.right"),
+                SidebarItem(title: L("sidebar.dev.rust"), identifier: "dev.rust", iconName: "gearshape.fill"),
+                SidebarItem(title: L("sidebar.dev.go"), identifier: "dev.go", iconName: "cylinder.fill"),
+                SidebarItem(title: L("sidebar.dev.jetbrains"), identifier: "dev.jetbrains", iconName: "terminal.fill"),
+                SidebarItem(title: L("sidebar.dev.vscode"), identifier: "dev.vscode", iconName: "chevron.left.forwardslash.chevron.right"),
+                SidebarItem(title: L("sidebar.dev.containers"), identifier: "dev.containers", iconName: "cube.box.fill"),
             ])
         ]
         // Expand Clean Junk by default

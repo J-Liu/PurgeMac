@@ -5,38 +5,55 @@ import Foundation
 
 /// The category of junk that can be scanned and cleaned.
 public enum JunkCategory: String, Codable, CaseIterable {
+    // MARK: - System Junk
     /// Per-user application and system caches under `~/Library/Caches`.
     case userCaches = "caches"
     /// Per-user log files and developer junk under `~/Library/Logs` and related.
     case logs = "logs"
     /// Orphaned files from uninstalled applications.
     case leftovers = "leftovers"
-    /// Cache directories of common web browsers.
-    case browserCaches = "browser-caches"
-    /// Cache directories of common developer tools.
-    case developerCaches = "developer-caches"
     /// Individual large files under Downloads and Desktop (list-only).
     case largeFiles = "large-files"
     /// The contents of the Trash, cleaned by emptying it.
     case trash = "trash"
 
+    // MARK: - Developer Tools
+    /// Xcode derived data, archives, device support, etc.
+    case devXcode = "dev-xcode"
+    /// Homebrew cache.
+    case devHomebrew = "dev-homebrew"
+    /// Node.js / npm / yarn / pnpm caches.
+    case devNode = "dev-node"
+    /// Python / pip / Poetry / conda caches.
+    case devPython = "dev-python"
+    /// Rust / Cargo caches.
+    case devRust = "dev-rust"
+    /// Go caches.
+    case devGo = "dev-go"
+    /// JetBrains IDEs caches.
+    case devJetBrains = "dev-jetbrains"
+    /// VS Code caches.
+    case devVSCode = "dev-vscode"
+    /// Docker / OrbStack caches.
+    case devContainers = "dev-containers"
+
     /// A human-readable label for UI and CLI output.
     public var displayName: String {
         switch self {
-        case .userCaches:
-            return "User Caches"
-        case .logs:
-            return "Logs"
-        case .leftovers:
-            return "App Leftovers"
-        case .browserCaches:
-            return "Browser Caches"
-        case .developerCaches:
-            return "Developer Caches"
-        case .largeFiles:
-            return "Large Files"
-        case .trash:
-            return "Trash"
+        case .userCaches: return "User Caches"
+        case .logs: return "Logs"
+        case .leftovers: return "App Leftovers"
+        case .largeFiles: return "Large Files"
+        case .trash: return "Trash"
+        case .devXcode: return "Xcode"
+        case .devHomebrew: return "Homebrew"
+        case .devNode: return "Node.js"
+        case .devPython: return "Python"
+        case .devRust: return "Rust"
+        case .devGo: return "Go"
+        case .devJetBrains: return "JetBrains"
+        case .devVSCode: return "VS Code"
+        case .devContainers: return "Containers"
         }
     }
 }

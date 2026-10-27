@@ -80,14 +80,29 @@ public struct JunkScanner {
             return scanLogs()
         case .leftovers:
             return scanLeftovers()
-        case .browserCaches:
-            return scanItems(browserCacheDirectories(), category: category, timeFiltered: true)
-        case .developerCaches:
-            return scanItems(developerCacheDirectories(), category: category, timeFiltered: true)
         case .largeFiles:
             return scanLargeFiles()
         case .trash:
             return scanItems(trashContents(), category: category, timeFiltered: false)
+        // Developer tools
+        case .devXcode:
+            return scanDevXcode()
+        case .devHomebrew:
+            return scanDevHomebrew()
+        case .devNode:
+            return scanDevNode()
+        case .devPython:
+            return scanDevPython()
+        case .devRust:
+            return scanDevRust()
+        case .devGo:
+            return scanDevGo()
+        case .devJetBrains:
+            return scanDevJetBrains()
+        case .devVSCode:
+            return scanDevVSCode()
+        case .devContainers:
+            return scanDevContainers()
         }
     }
 
@@ -228,6 +243,142 @@ public struct JunkScanner {
             }
         }
         return names
+    }
+
+    // MARK: - Developer Tools Scanning
+
+    /// Scans Xcode related caches and derived data.
+    private func scanDevXcode() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/Library/Developer/Xcode/DerivedData", true),
+            ("\(home)/Library/Developer/Xcode/Archives", false),
+            ("\(home)/Library/Developer/Xcode/iOS DeviceSupport", true),
+            ("\(home)/Library/Developer/Xcode/watchOS DeviceSupport", true),
+            ("\(home)/Library/Developer/Xcode/tvOS DeviceSupport", true),
+            ("\(home)/Library/Developer/CoreSimulator/Caches", true),
+            ("\(home)/Library/Caches/com.apple.dt.Xcode", true),
+            ("\(home)/Library/Developer/XCTestDevices", true),
+            ("\(home)/Library/Developer/Xcode/UserData/Previews", true),
+        ]
+        return scanDevPaths(paths, category: .devXcode)
+    }
+
+    /// Scans Homebrew cache.
+    private func scanDevHomebrew() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/Library/Caches/Homebrew", true),
+        ]
+        return scanDevPaths(paths, category: .devHomebrew)
+    }
+
+    /// Scans Node.js / npm / yarn / pnpm caches.
+    private func scanDevNode() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.npm/_cacache", true),
+            ("\(home)/.npm/_logs", true),
+            ("\(home)/Library/Caches/Yarn", true),
+            ("\(home)/.cache/yarn", true),
+            ("\(home)/.yarn/berry/cache", true),
+            ("\(home)/Library/pnpm/store", true),
+            ("\(home)/.pnpm-store", true),
+            ("\(home)/.cache/pnpm", true),
+        ]
+        return scanDevPaths(paths, category: .devNode)
+    }
+
+    /// Scans Python / pip / Poetry caches.
+    private func scanDevPython() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/Library/Caches/pip", true),
+            ("\(home)/.cache/pip", true),
+            ("\(home)/Library/Caches/pypoetry", true),
+            ("\(home)/.cache/pypoetry", true),
+        ]
+        return scanDevPaths(paths, category: .devPython)
+    }
+
+    /// Scans Rust / Cargo caches.
+    private func scanDevRust() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.cargo/registry/cache", true),
+            ("\(home)/.cargo/registry/index", true),
+            ("\(home)/.cargo/git/db", true),
+            ("\(home)/.cargo/git/checkouts", true),
+        ]
+        return scanDevPaths(paths, category: .devRust)
+    }
+
+    /// Scans Go caches.
+    private func scanDevGo() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/Library/Caches/go-build", true),
+            ("\(home)/go/pkg/mod/cache", true),
+        ]
+        return scanDevPaths(paths, category: .devGo)
+    }
+
+    /// Scans JetBrains IDEs caches.
+    private func scanDevJetBrains() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/Library/Caches/JetBrains", true),
+            ("\(home)/Library/Logs/JetBrains", true),
+        ]
+        return scanDevPaths(paths, category: .devJetBrains)
+    }
+
+    /// Scans VS Code caches.
+    private func scanDevVSCode() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/Library/Application Support/Code/Cache", true),
+            ("\(home)/Library/Application Support/Code/CachedData", true),
+            ("\(home)/Library/Application Support/Code/CachedExtensionVSIXs", true),
+            ("\(home)/Library/Application Support/Code/logs", true),
+        ]
+        return scanDevPaths(paths, category: .devVSCode)
+    }
+
+    /// Scans Docker / OrbStack caches.
+    private func scanDevContainers() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/Library/Containers/com.docker.docker/Data/cache", true),
+            ("\(home)/Library/Containers/com.docker.docker/Data/log", true),
+            ("\(home)/Library/Containers/com.docker.docker/Data/tmp", true),
+            ("\(home)/Library/Group Containers/group.com.docker/Caches", true),
+            ("\(home)/.orbstack/log", true),
+            ("\(home)/Library/Caches/dev.kdrag0n.MacVirt", true),
+            ("\(home)/Library/Logs/OrbStack", true),
+        ]
+        return scanDevPaths(paths, category: .devContainers)
+    }
+
+    /// Helper to scan developer tool paths.
+    private func scanDevPaths(_ paths: [(path: String, selected: Bool)], category: JunkCategory) -> [JunkItem] {
+        var items: [JunkItem] = []
+        for (path, selected) in paths {
+            let url = URL(fileURLWithPath: path)
+            let attributes = Self.attributes(for: url)
+            guard attributes.size > 0 else { continue }
+
+            items.append(
+                JunkItem(
+                    path: path,
+                    size: attributes.size,
+                    category: category,
+                    lastAccessDate: attributes.lastAccessDate,
+                    selectedByDefault: selected
+                )
+            )
+        }
+        return items.sorted { $0.size > $1.size }
     }
 
     // MARK: - Cache scanning
