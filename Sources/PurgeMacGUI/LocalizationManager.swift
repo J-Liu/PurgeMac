@@ -113,12 +113,12 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
 
         // Sidebar
         "sidebar.uninstall": "Uninstaller",
-        "sidebar.cleanup": "Clean Junk",
+        "sidebar.cleanup": "System Junk",
         "sidebar.clean.caches": "System Caches",
         "sidebar.clean.logs": "Logs & Errors",
         "sidebar.clean.leftovers": "App Leftovers",
         "sidebar.clean.largeFiles": "Large Files",
-        "sidebar.developer": "Developer",
+        "sidebar.developer": "Developer Junk",
         "sidebar.dev.xcode": "Xcode",
         "sidebar.dev.homebrew": "Homebrew",
         "sidebar.dev.node": "Node.js",
@@ -230,12 +230,12 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
 
         // Sidebar
         "sidebar.uninstall": "卸载器",
-        "sidebar.cleanup": "清理垃圾",
+        "sidebar.cleanup": "系统垃圾",
         "sidebar.clean.caches": "系统缓存",
         "sidebar.clean.logs": "日志和错误信息",
         "sidebar.clean.leftovers": "应用残留",
         "sidebar.clean.largeFiles": "大文件",
-        "sidebar.developer": "开发者",
+        "sidebar.developer": "开发者垃圾",
         "sidebar.dev.xcode": "Xcode",
         "sidebar.dev.homebrew": "Homebrew",
         "sidebar.dev.node": "Node.js",
@@ -347,12 +347,12 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
 
         // Sidebar
         "sidebar.uninstall": "卸載器",
-        "sidebar.cleanup": "清理垃圾",
+        "sidebar.cleanup": "系統垃圾",
         "sidebar.clean.caches": "系統快取",
         "sidebar.clean.logs": "日誌和錯誤資訊",
         "sidebar.clean.leftovers": "應用程式殘留",
         "sidebar.clean.largeFiles": "大檔案",
-        "sidebar.developer": "開發者",
+        "sidebar.developer": "開發者垃圾",
         "sidebar.dev.xcode": "Xcode",
         "sidebar.dev.homebrew": "Homebrew",
         "sidebar.dev.node": "Node.js",

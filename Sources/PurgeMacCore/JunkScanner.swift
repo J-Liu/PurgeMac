@@ -108,6 +108,68 @@ public struct JunkScanner {
 
     // MARK: - Leftovers scanning
 
+    /// System prefixes that should never be flagged as orphans.
+    private static let skipReverse: Set<String> = [
+        // Apple & System
+        "apple", "temporary", "btserver", "proapps", "scripteditor", "ilife",
+        "livefsd", "siritoday", "addressbook", "animoji", "appstore",
+        "askpermission", "callhistory", "clouddocs", "diskimages", "dock",
+        "facetime", "fileprovider", "instruments", "knowledge", "mobilesync",
+        "syncservices", "homeenergyd", "icloud", "icdd", "networkserviceproxy",
+        "familycircle", "geoservices", "installation", "passkit",
+        "sharedimagecache", "desktop", "mbuseragent", "swiftpm", "baseband",
+        "coresimulator", "photoslegacyupgrade", "photosupgrade", "siritts",
+        "ipod", "globalpreferences",
+        // Analytics & Telemetry
+        "apmanalytics", "apmexperiment", "avatarcache", "byhost",
+        "contextstoreagent", "mobilemeaccounts", "mobiledocuments", "mobile",
+        "intentbuilderc", "loginwindow", "momc", "replayd", "sharedfilelistd",
+        // Build Tools & Compilers
+        "clang", "audiocomponent", "csexattrcryptoservice",
+        "livetranscriptionagent", "sandboxhelper", "statuskitagent",
+        // System Daemons
+        "betaenrollmentd", "contentlinkingd", "diagnosticextensionsd", "gamed",
+        "heard", "homed", "itunescloudd", "lldb", "mds", "mediaanalysisd",
+        "metrickitd", "mobiletimerd", "proactived", "ptpcamerad", "studentd",
+        "talagent", "watchlistd", "apptranslocation", "xcrun",
+        // Generic Infrastructure
+        "ds_store", "caches", "crashreporter", "trash",
+        // Common SDKs and Shared Components
+        "amsdatamigratortool", "arfilecache", "assistant", "chromium",
+        "cloudkit", "webkit", "databases", "diagnostic", "cache", "gamekit",
+        "homebrew", "logi", "microsoft", "mozilla", "sync", "google",
+        "sentinel", "hexnode", "sentry", "tvappservices", "reminders", "pbs",
+        "notarytool", "differentialprivacy", "storeassetd", "webpush",
+        "storedownloadd", "fsck", "crash", "python", "discrecording",
+        "photossearch", "pylint", "jamf", "scopedbookmarkagent", "anonymous",
+        "identifier", "isolated", "nobackup", "privacypreservingmeasurement",
+        "symbols", "stickersd", "privatecloudcomputed", "tipsd",
+        "controlcenter", "contactsd", "staticcheck", "index", "segment",
+        "sparkle", "summaryevents", "launchdarkly", "identityservicesd",
+        "embeddedbinaryvalidationutility", "aaprofilepicture", "minilauncher",
+        "jna", "automator", "locationaccessstored", "spotlight", "cef"
+    ]
+
+    /// Blocked path fragments that should never appear in orphan results.
+    private static let blockedFragments: [String] = [
+        "/Library/Preferences",
+        "/Library/PreferencePanes",
+        "/Library/Containers",
+        "/Library/Group Containers",
+        "/Library/Application Scripts",
+        "/Library/LaunchAgents",
+        "/Library/LaunchDaemons",
+        "/Library/PrivilegedHelperTools",
+        "/Library/Keychains",
+        "/Library/Mail",
+        "/Library/Safari",
+        "/Library/Messages",
+        "/Library/Calendars",
+        "/Library/Accounts",
+        "/Library/Mobile Documents",
+        "/Library/CloudStorage",
+    ]
+
     /// Scans for orphaned files from uninstalled applications.
     private func scanLeftovers() -> [JunkItem] {
         var items: [JunkItem] = []
@@ -118,35 +180,15 @@ public struct JunkScanner {
         let knownAppIDs = Self.getInstalledAppIdentifiers()
         let knownAppNames = Self.getInstalledAppNames()
 
-        // Paths to scan for orphaned files
+        // Only scan safe volatile data directories
         let searchPaths: [String] = [
-            "\(home)/Library/Application Scripts",
-            "\(home)/Library/Application Support",
-            "\(home)/Library/Containers",
             "\(home)/Library/Caches",
-            "\(home)/Library/HTTPStorages",
-            "\(home)/Library/Internet Plug-Ins",
-            "\(home)/Library/LaunchAgents",
             "\(home)/Library/Logs",
-            "\(home)/Library/Preferences",
-            "\(home)/Library/PreferencePanes",
             "\(home)/Library/Saved Application State",
+            "\(home)/Library/HTTPStorages",
             "\(home)/Library/WebKit",
-            "/Library/Application Support",
-            "/Library/LaunchAgents",
-            "/Library/LaunchDaemons",
-        ]
-
-        // Prefixes to skip (Apple system items, etc.)
-        let skipPrefixes: Set<String> = [
-            "apple", "com.apple", "comapple", "temporary", "system",
-            "dock", "loginwindow", "launchd", "coresimulator",
-            "mobilesync", "cloudkit", "icloud", "siri", "spotlight",
-            "safari", "webkit", "mail", "messages", "facetime",
-            "photos", "music", "podcasts", "news", "maps", "calendar",
-            "contacts", "reminders", "notes", "keychainaccess",
-            "bluetooth", "wifi", "network", "disk", "fsck",
-            " installd", "configd", "cfprefsd", "distnoted",
+            "/Library/Caches",
+            "/Library/Logs",
         ]
 
         for searchPath in searchPaths {
@@ -158,29 +200,25 @@ public struct JunkScanner {
             ) else { continue }
 
             for entry in entries {
-                let name = entry.lastPathComponent.lowercased()
+                let name = entry.lastPathComponent
+                let normalized = name.normalizedForMatching()
 
-                // Skip system items
-                var shouldSkip = false
-                for prefix in skipPrefixes {
-                    if name.hasPrefix(prefix) {
-                        shouldSkip = true
-                        break
-                    }
-                }
-                if shouldSkip { continue }
+                // Skip known system items using skipReverse
+                if Self.skipReverse.contains(where: { normalized.hasPrefix($0) }) { continue }
+
+                // Skip Apple items
+                if name.lowercased().hasPrefix("com.apple.") { continue }
 
                 // Check if this item belongs to any known app
-                let normalized = name.replacingOccurrences(of: "-", with: "")
-                                   .replacingOccurrences(of: "_", with: "")
-                                   .replacingOccurrences(of: ".", with: "")
-
-                let belongsToKnownApp = knownAppIDs.contains { normalized.contains($0.lowercased()) } ||
-                                        knownAppNames.contains { normalized.contains($0.lowercased()) }
+                let belongsToKnownApp = knownAppIDs.contains(where: { normalized.contains($0) }) ||
+                                        knownAppNames.contains(where: { normalized.contains($0) })
 
                 if belongsToKnownApp { continue }
 
-                // This is a potential orphan
+                // Final safety check: ensure path doesn't contain blocked fragments
+                let lowerPath = entry.path.lowercased()
+                if Self.blockedFragments.contains(where: { lowerPath.contains($0.lowercased()) }) { continue }
+
                 let attributes = Self.attributes(for: entry)
                 guard attributes.size > 0 else { continue }
 
@@ -190,7 +228,7 @@ public struct JunkScanner {
                         size: attributes.size,
                         category: .leftovers,
                         lastAccessDate: attributes.lastAccessDate,
-                        selectedByDefault: false // Orphans are not selected by default - user should review
+                        selectedByDefault: false
                     )
                 )
             }
@@ -449,75 +487,37 @@ public struct JunkScanner {
 
     // MARK: - Log scanning
 
-    /// Scans logs and junk items based on PureMac's junk category.
+    /// Scans log files only.
     private func scanLogs() -> [JunkItem] {
         var items: [JunkItem] = []
-
-        // Define targets similar to PureMac's junk category
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let h: (String) -> String = { "\(home)/\($0)" }
 
-        struct LogTarget {
-            let name: String
-            let path: String
-            let scanContents: Bool
-            let selectedByDefault: Bool
-        }
-
-        let targets: [LogTarget] = [
-            // User logs - scan contents
-            LogTarget(name: "User Logs", path: h("Library/Logs"), scanContents: true, selectedByDefault: true),
-            // Saved application state - not selected by default
-            LogTarget(name: "Saved Application State", path: h("Library/Saved Application State"), scanContents: true, selectedByDefault: false),
-            // Xcode items
-            LogTarget(name: "Xcode DerivedData", path: h("Library/Developer/Xcode/DerivedData"), scanContents: false, selectedByDefault: true),
-            LogTarget(name: "Xcode Archives", path: h("Library/Developer/Xcode/Archives"), scanContents: false, selectedByDefault: false),
-            LogTarget(name: "iOS DeviceSupport", path: h("Library/Developer/Xcode/iOS DeviceSupport"), scanContents: false, selectedByDefault: true),
-            LogTarget(name: "watchOS DeviceSupport", path: h("Library/Developer/Xcode/watchOS DeviceSupport"), scanContents: false, selectedByDefault: true),
-            LogTarget(name: "tvOS DeviceSupport", path: h("Library/Developer/Xcode/tvOS DeviceSupport"), scanContents: false, selectedByDefault: true),
-            LogTarget(name: "CoreSimulator Caches", path: h("Library/Developer/CoreSimulator/Caches"), scanContents: false, selectedByDefault: true),
-            LogTarget(name: "Xcode App Cache", path: h("Library/Caches/com.apple.dt.Xcode"), scanContents: false, selectedByDefault: true),
-            LogTarget(name: "XCTestDevices", path: h("Library/Developer/XCTestDevices"), scanContents: false, selectedByDefault: true),
-            LogTarget(name: "SwiftUI Previews", path: h("Library/Developer/Xcode/UserData/Previews"), scanContents: false, selectedByDefault: true),
+        // Only scan actual log directories
+        let logPaths: [(path: String, selectedByDefault: Bool)] = [
+            ("\(home)/Library/Logs", true),
+            ("\(home)/Library/Application Support/CrashReporter", true),
+            ("/var/log", false), // System logs - not selected by default
         ]
 
-        for target in targets {
-            if target.scanContents {
-                // Scan children of the directory
-                let dirURL = URL(fileURLWithPath: target.path)
-                guard let entries = try? FileManager.default.contentsOfDirectory(
-                    at: dirURL,
-                    includingPropertiesForKeys: nil,
-                    options: [.skipsHiddenFiles]
-                ) else { continue }
+        for (logPath, selected) in logPaths {
+            let dirURL = URL(fileURLWithPath: logPath)
+            guard let entries = try? FileManager.default.contentsOfDirectory(
+                at: dirURL,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ) else { continue }
 
-                for entry in entries {
-                    let attributes = Self.attributes(for: entry)
-                    guard attributes.size > 0 else { continue }
-
-                    items.append(
-                        JunkItem(
-                            path: entry.path,
-                            size: attributes.size,
-                            category: .logs,
-                            lastAccessDate: attributes.lastAccessDate,
-                            selectedByDefault: target.selectedByDefault
-                        )
-                    )
-                }
-            } else {
-                // Treat the path itself as a single item
-                let url = URL(fileURLWithPath: target.path)
-                let attributes = Self.attributes(for: url)
+            for entry in entries {
+                let attributes = Self.attributes(for: entry)
                 guard attributes.size > 0 else { continue }
 
                 items.append(
                     JunkItem(
-                        path: target.path,
+                        path: entry.path,
                         size: attributes.size,
                         category: .logs,
                         lastAccessDate: attributes.lastAccessDate,
-                        selectedByDefault: target.selectedByDefault
+                        selectedByDefault: selected
                     )
                 )
             }

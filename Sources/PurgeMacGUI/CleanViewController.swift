@@ -35,9 +35,27 @@ final class CleanViewController: NSViewController {
         case "clean.logs":
             autoScanCategory(.logs)
         case "clean.leftovers":
-            statusLabel.stringValue = "App Leftovers - Coming Soon"
+            autoScanCategory(.leftovers)
         case "clean.largeFiles":
             autoScanCategory(.largeFiles)
+        case "dev.xcode":
+            autoScanCategory(.devXcode)
+        case "dev.homebrew":
+            autoScanCategory(.devHomebrew)
+        case "dev.node":
+            autoScanCategory(.devNode)
+        case "dev.python":
+            autoScanCategory(.devPython)
+        case "dev.rust":
+            autoScanCategory(.devRust)
+        case "dev.go":
+            autoScanCategory(.devGo)
+        case "dev.jetbrains":
+            autoScanCategory(.devJetBrains)
+        case "dev.vscode":
+            autoScanCategory(.devVSCode)
+        case "dev.containers":
+            autoScanCategory(.devContainers)
         default:
             break
         }

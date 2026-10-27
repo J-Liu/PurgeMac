@@ -80,8 +80,9 @@ final class SidebarViewController: NSViewController {
                 SidebarItem(title: L("sidebar.dev.containers"), identifier: "dev.containers", iconName: "cube.box.fill"),
             ])
         ]
-        // Expand Clean Junk by default
+        // Expand System Junk and Developer Junk by default
         rootItems[1].isExpanded = true
+        rootItems[2].isExpanded = true
         flattenItems()
     }
 
