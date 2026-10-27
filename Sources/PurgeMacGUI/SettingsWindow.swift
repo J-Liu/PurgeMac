@@ -161,15 +161,6 @@ final class SettingsWindow: NSWindow {
         languagePopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
         stack.addArrangedSubview(makeRow(label: L("settings.language"), control: languagePopup))
 
-        // Restart hint label
-        let restartLabel = NSTextField(labelWithString: L("settings.restartRequired"))
-        restartLabel.textColor = .secondaryLabelColor
-        restartLabel.font = .systemFont(ofSize: 11)
-        restartLabel.translatesAutoresizingMaskIntoConstraints = false
-        restartLabel.isHidden = true
-        restartLabel.identifier = NSUserInterfaceItemIdentifier("restartLabel")
-        stack.addArrangedSubview(restartLabel)
-
         return wrapInTopAlignedContainer(stack)
     }
 
@@ -399,10 +390,6 @@ final class SettingsWindow: NSWindow {
     @objc private func languageChanged(_ sender: NSPopUpButton) {
         guard let selected = sender.selectedItem?.representedObject as? AppLanguage else { return }
         LocalizationManager.shared.currentLanguage = selected
-
-        if let restartLabel = generalTab.subviews.first(where: { $0.identifier?.rawValue == "restartLabel" }) as? NSTextField {
-            restartLabel.isHidden = false
-        }
     }
 
     @objc private func largeFileThresholdChanged(_ sender: NSTextField) {
@@ -509,6 +496,10 @@ final class SettingsWindow: NSWindow {
         if let url = URL(string: "https://github.com/J-Liu/PurgeMac") {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    func selectTab(withIdentifier identifier: String) {
+        tabView.selectTabViewItem(withIdentifier: identifier)
     }
 }
 
