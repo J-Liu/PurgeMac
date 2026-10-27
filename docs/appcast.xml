@@ -4,5 +4,18 @@
     <title>PurgeMac</title>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
+
+    <item>
+    <title>Version 0.1.0</title>
+    <pubDate>Tue, 27 Oct 2026 10:16:06 +0000</pubDate>
+    <sparkle:version>1</sparkle:version>
+    <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+    <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+    <enclosure
+        url="https://github.com/J-Liu/PurgeMac/releases/download/v0.1.0/PurgeMac-0.1.0.zip"
+        sparkle:edSignature="2OJi/tJyQKp6t7ISaSRgXv+NS8J5SbdThO+njuKQ6vRFXoOXxRAIE0nlSmHt4mSHQUZk0Qz1lOxdmvIxzL0MDQ=="
+        length="4763927"
+        type="application/octet-stream"/>
+</item>
   </channel>
 </rss>
