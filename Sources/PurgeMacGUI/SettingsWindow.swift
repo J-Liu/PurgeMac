@@ -161,6 +161,11 @@ final class SettingsWindow: NSWindow {
         languagePopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
         stack.addArrangedSubview(makeRow(label: L("settings.language"), control: languagePopup))
 
+        // Row: Quit on close
+        let quitOnCloseCheckbox = NSButton(checkboxWithTitle: L("settings.quitOnClose.checkbox"), target: self, action: #selector(quitOnCloseChanged(_:)))
+        quitOnCloseCheckbox.state = UserDefaults.standard.bool(forKey: "settings.quitOnClose") ? .on : .off
+        stack.addArrangedSubview(makeRow(label: L("settings.quitOnClose"), control: quitOnCloseCheckbox))
+
         return wrapInTopAlignedContainer(stack)
     }
 
@@ -390,6 +395,11 @@ final class SettingsWindow: NSWindow {
     @objc private func languageChanged(_ sender: NSPopUpButton) {
         guard let selected = sender.selectedItem?.representedObject as? AppLanguage else { return }
         LocalizationManager.shared.currentLanguage = selected
+    }
+
+    @objc private func quitOnCloseChanged(_ sender: NSButton) {
+        let quitOnClose = sender.state == .on
+        UserDefaults.standard.set(quitOnClose, forKey: "settings.quitOnClose")
     }
 
     @objc private func largeFileThresholdChanged(_ sender: NSTextField) {

@@ -40,6 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.setContentSize(NSSize(width: 1100, height: 680))
         window.minSize = NSSize(width: 800, height: 520)
         window.center()
+        window.delegate = self
         window.makeKeyAndOrderFront(nil)
         self.window = window
     }
@@ -51,12 +52,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if event.modifierFlags.contains(.command) && event.keyCode == 13 {
                 if self.settingsWindow?.isVisible == true {
                     self.settingsWindow?.close()
-                } else if self.window?.isVisible == true {
-                    self.window?.close()
+                } else if let window = self.window, window.isVisible {
+                    self.handleWindowClose(window)
                 }
                 return nil
             }
             return event
+        }
+    }
+
+    /// Handle window close based on user preference.
+    private func handleWindowClose(_ window: NSWindow) {
+        let quitOnClose = UserDefaults.standard.bool(forKey: "settings.quitOnClose")
+        if quitOnClose {
+            NSApp.terminate(nil)
+        } else {
+            window.orderOut(nil)
         }
     }
 
@@ -77,7 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        true
+        UserDefaults.standard.bool(forKey: "settings.quitOnClose")
     }
 
     /// Builds the main menu with standard macOS menu items.
@@ -345,5 +356,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func checkForUpdates() {
         updaterController.checkForUpdates(nil)
+    }
+}
+
+// MARK: - NSWindowDelegate
+
+extension AppDelegate: NSWindowDelegate {
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard sender === window else { return true }
+        handleWindowClose(sender)
+        return false
     }
 }
