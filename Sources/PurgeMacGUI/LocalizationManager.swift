@@ -6,6 +6,7 @@ import Foundation
 extension Notification.Name {
     static let languageChanged = Notification.Name("languageChanged")
     static let largeFilesSettingsChanged = Notification.Name("largeFilesSettingsChanged")
+    static let filesDeleted = Notification.Name("filesDeleted")
 }
 
 /// Supported languages for the app
@@ -130,6 +131,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "sidebar.dev.jetbrains": "JetBrains",
         "sidebar.dev.vscode": "VS Code",
         "sidebar.dev.containers": "Containers",
+        "sidebar.diskUsage.unavailable": "Disk info unavailable",
 
         // Uninstall View
         "uninstall.search.placeholder": "Search by name or bundle ID",
@@ -270,6 +272,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "sidebar.dev.jetbrains": "JetBrains",
         "sidebar.dev.vscode": "VS Code",
         "sidebar.dev.containers": "容器",
+        "sidebar.diskUsage.unavailable": "磁盘信息不可用",
 
         // Uninstall View
         "uninstall.search.placeholder": "按名称或 Bundle ID 搜索",
@@ -410,6 +413,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "sidebar.dev.jetbrains": "JetBrains",
         "sidebar.dev.vscode": "VS Code",
         "sidebar.dev.containers": "容器",
+        "sidebar.diskUsage.unavailable": "磁盘信息不可用",
 
         // Uninstall View
         "uninstall.search.placeholder": "按名稱或 Bundle ID 搜尋",

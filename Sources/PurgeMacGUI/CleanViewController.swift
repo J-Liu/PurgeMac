@@ -331,6 +331,8 @@ final class CleanViewController: NSViewController {
                 self?.updateSelectAllCheckboxState()
                 self?.updateMoveToTrashButtonVisibility()
                 self?.statusLabel.stringValue = L("clean.status.freed", Self.formatBytes(result.freedBytes))
+                // Notify that files were deleted
+                NotificationCenter.default.post(name: .filesDeleted, object: nil)
             }
         }
     }

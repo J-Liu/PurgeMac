@@ -378,6 +378,8 @@ final class UninstallViewController: NSViewController {
                     self?.statusLabel.stringValue = message
                     self?.selectedApp = nil
                     self?.refreshAppsAsync()
+                    // Notify that files were deleted
+                    NotificationCenter.default.post(name: .filesDeleted, object: nil)
                 }
             } catch {
                 DispatchQueue.main.async {

@@ -26,6 +26,12 @@ final class SidebarViewController: NSViewController {
     private let tableView = NSTableView()
     private var selectedIdentifier: String = "uninstall"
 
+    // Disk usage views
+    private let diskUsageContainer = NSView()
+    private let diskUsageLabel = NSTextField(labelWithString: "")
+    private let diskUsageBar = NSProgressIndicator()
+    private var diskInfoTimer: Timer?
+
     /// Called when the user selects an item, with the item identifier.
     var onSelect: ((String) -> Void)?
 
@@ -46,17 +52,115 @@ final class SidebarViewController: NSViewController {
         scrollView.hasVerticalScroller = true
         scrollView.drawsBackground = false
 
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        // Disk usage container
+        diskUsageContainer.wantsLayer = true
+        diskUsageContainer.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        diskUsageContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        let iconView = NSImageView()
+        iconView.image = NSImage(systemSymbolName: "internaldrive.fill", accessibilityDescription: nil)
+        iconView.contentTintColor = .systemBlue
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        diskUsageContainer.addSubview(iconView)
+
+        diskUsageLabel.font = .systemFont(ofSize: 11)
+        diskUsageLabel.textColor = .labelColor
+        diskUsageLabel.translatesAutoresizingMaskIntoConstraints = false
+        diskUsageContainer.addSubview(diskUsageLabel)
+
+        diskUsageBar.isIndeterminate = false
+        diskUsageBar.style = .bar
+        diskUsageBar.controlSize = .small
+        diskUsageBar.translatesAutoresizingMaskIntoConstraints = false
+        diskUsageContainer.addSubview(diskUsageBar)
+
+        NSLayoutConstraint.activate([
+            iconView.leadingAnchor.constraint(equalTo: diskUsageContainer.leadingAnchor, constant: 12),
+            iconView.topAnchor.constraint(equalTo: diskUsageContainer.topAnchor, constant: 10),
+            iconView.widthAnchor.constraint(equalToConstant: 16),
+            iconView.heightAnchor.constraint(equalToConstant: 16),
+
+            diskUsageLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 6),
+            diskUsageLabel.topAnchor.constraint(equalTo: diskUsageContainer.topAnchor, constant: 10),
+            diskUsageLabel.trailingAnchor.constraint(equalTo: diskUsageContainer.trailingAnchor, constant: -12),
+
+            diskUsageBar.leadingAnchor.constraint(equalTo: diskUsageContainer.leadingAnchor, constant: 12),
+            diskUsageBar.trailingAnchor.constraint(equalTo: diskUsageContainer.trailingAnchor, constant: -12),
+            diskUsageBar.topAnchor.constraint(equalTo: diskUsageLabel.bottomAnchor, constant: 6),
+            diskUsageBar.bottomAnchor.constraint(equalTo: diskUsageContainer.bottomAnchor, constant: -10),
+        ])
+
         let container = NSView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(scrollView)
+        container.addSubview(diskUsageContainer)
+
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: container.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: diskUsageContainer.topAnchor),
+
+            diskUsageContainer.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            diskUsageContainer.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            diskUsageContainer.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
         view = container
+
+        // Update disk usage
+        updateDiskUsage()
+        startDiskUsageTimer()
+
+        // Listen for file system changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(filesDidChange),
+            name: .filesDeleted,
+            object: nil
+        )
+    }
+
+    private func updateDiskUsage() {
+        let homeURL = FileManager.default.homeDirectoryForCurrentUser
+        guard let attributes = try? homeURL.resourceValues(forKeys: [.volumeAvailableCapacityKey, .volumeTotalCapacityKey]),
+              let total = attributes.volumeTotalCapacity,
+              let available = attributes.volumeAvailableCapacity else {
+            diskUsageLabel.stringValue = L("sidebar.diskUsage.unavailable")
+            diskUsageBar.doubleValue = 0
+            return
+        }
+
+        let used = total - available
+        let percentage = Double(used) / Double(total) * 100
+
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+
+        let usedStr = formatter.string(fromByteCount: Int64(used))
+        let totalStr = formatter.string(fromByteCount: Int64(total))
+
+        diskUsageLabel.stringValue = "\(usedStr) / \(totalStr)"
+        diskUsageBar.doubleValue = percentage
+    }
+
+    private func startDiskUsageTimer() {
+        diskInfoTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.updateDiskUsage()
+            }
+        }
+    }
+
+    @objc private func filesDidChange() {
+        DispatchQueue.main.async {
+            self.updateDiskUsage()
+        }
+    }
+
+    deinit {
+        diskInfoTimer?.invalidate()
+        NotificationCenter.default.removeObserver(self)
     }
 
     private func rebuildItems() {
@@ -121,6 +225,10 @@ final class SidebarViewController: NSViewController {
         tableView.reloadData()
         // Re-select current item
         selectIdentifier(selectedIdentifier)
+    }
+
+    func refreshDiskUsage() {
+        updateDiskUsage()
     }
 }
 

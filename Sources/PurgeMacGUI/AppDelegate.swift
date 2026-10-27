@@ -91,6 +91,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         UserDefaults.standard.bool(forKey: "settings.quitOnClose")
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if flag {
+            window?.makeKeyAndOrderFront(nil)
+        } else {
+            createMainWindow()
+        }
+        return true
+    }
+
     /// Builds the main menu with standard macOS menu items.
     private func setupMainMenu() {
         let mainMenu = NSMenu()
