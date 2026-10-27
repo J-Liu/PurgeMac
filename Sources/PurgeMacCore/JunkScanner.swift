@@ -78,6 +78,8 @@ public struct JunkScanner {
             return scanCaches()
         case .logs:
             return scanLogs()
+        case .leftovers:
+            return scanLeftovers()
         case .browserCaches:
             return scanItems(browserCacheDirectories(), category: category, timeFiltered: true)
         case .developerCaches:
@@ -87,6 +89,145 @@ public struct JunkScanner {
         case .trash:
             return scanItems(trashContents(), category: category, timeFiltered: false)
         }
+    }
+
+    // MARK: - Leftovers scanning
+
+    /// Scans for orphaned files from uninstalled applications.
+    private func scanLeftovers() -> [JunkItem] {
+        var items: [JunkItem] = []
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser.path
+
+        // Get installed app identifiers for filtering
+        let knownAppIDs = Self.getInstalledAppIdentifiers()
+        let knownAppNames = Self.getInstalledAppNames()
+
+        // Paths to scan for orphaned files
+        let searchPaths: [String] = [
+            "\(home)/Library/Application Scripts",
+            "\(home)/Library/Application Support",
+            "\(home)/Library/Containers",
+            "\(home)/Library/Caches",
+            "\(home)/Library/HTTPStorages",
+            "\(home)/Library/Internet Plug-Ins",
+            "\(home)/Library/LaunchAgents",
+            "\(home)/Library/Logs",
+            "\(home)/Library/Preferences",
+            "\(home)/Library/PreferencePanes",
+            "\(home)/Library/Saved Application State",
+            "\(home)/Library/WebKit",
+            "/Library/Application Support",
+            "/Library/LaunchAgents",
+            "/Library/LaunchDaemons",
+        ]
+
+        // Prefixes to skip (Apple system items, etc.)
+        let skipPrefixes: Set<String> = [
+            "apple", "com.apple", "comapple", "temporary", "system",
+            "dock", "loginwindow", "launchd", "coresimulator",
+            "mobilesync", "cloudkit", "icloud", "siri", "spotlight",
+            "safari", "webkit", "mail", "messages", "facetime",
+            "photos", "music", "podcasts", "news", "maps", "calendar",
+            "contacts", "reminders", "notes", "keychainaccess",
+            "bluetooth", "wifi", "network", "disk", "fsck",
+            " installd", "configd", "cfprefsd", "distnoted",
+        ]
+
+        for searchPath in searchPaths {
+            let url = URL(fileURLWithPath: searchPath)
+            guard let entries = try? fm.contentsOfDirectory(
+                at: url,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ) else { continue }
+
+            for entry in entries {
+                let name = entry.lastPathComponent.lowercased()
+
+                // Skip system items
+                var shouldSkip = false
+                for prefix in skipPrefixes {
+                    if name.hasPrefix(prefix) {
+                        shouldSkip = true
+                        break
+                    }
+                }
+                if shouldSkip { continue }
+
+                // Check if this item belongs to any known app
+                let normalized = name.replacingOccurrences(of: "-", with: "")
+                                   .replacingOccurrences(of: "_", with: "")
+                                   .replacingOccurrences(of: ".", with: "")
+
+                let belongsToKnownApp = knownAppIDs.contains { normalized.contains($0.lowercased()) } ||
+                                        knownAppNames.contains { normalized.contains($0.lowercased()) }
+
+                if belongsToKnownApp { continue }
+
+                // This is a potential orphan
+                let attributes = Self.attributes(for: entry)
+                guard attributes.size > 0 else { continue }
+
+                items.append(
+                    JunkItem(
+                        path: entry.path,
+                        size: attributes.size,
+                        category: .leftovers,
+                        lastAccessDate: attributes.lastAccessDate,
+                        selectedByDefault: false // Orphans are not selected by default - user should review
+                    )
+                )
+            }
+        }
+
+        return items.sorted { $0.size > $1.size }
+    }
+
+    /// Gets bundle identifiers of installed applications.
+    private static func getInstalledAppIdentifiers() -> Set<String> {
+        var identifiers = Set<String>()
+        let appPaths = [
+            "/Applications",
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path
+        ]
+
+        for appPath in appPaths {
+            guard let contents = try? FileManager.default.contentsOfDirectory(atPath: appPath) else { continue }
+            for item in contents where item.hasSuffix(".app") {
+                let appURL = URL(fileURLWithPath: appPath).appendingPathComponent(item)
+                if let bundle = Bundle(url: appURL),
+                   let bundleID = bundle.bundleIdentifier {
+                    // Normalize for matching (remove dots, dashes, underscores)
+                    let normalized = bundleID.replacingOccurrences(of: "-", with: "")
+                                            .replacingOccurrences(of: "_", with: "")
+                                            .replacingOccurrences(of: ".", with: "")
+                                            identifiers.insert(normalized)
+                }
+            }
+        }
+        return identifiers
+    }
+
+    /// Gets names of installed applications.
+    private static func getInstalledAppNames() -> Set<String> {
+        var names = Set<String>()
+        let appPaths = [
+            "/Applications",
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path
+        ]
+
+        for appPath in appPaths {
+            guard let contents = try? FileManager.default.contentsOfDirectory(atPath: appPath) else { continue }
+            for item in contents where item.hasSuffix(".app") {
+                let appName = (item as NSString).deletingPathExtension.lowercased()
+                let normalized = appName.replacingOccurrences(of: " ", with: "")
+                                       .replacingOccurrences(of: "-", with: "")
+                                       .replacingOccurrences(of: "_", with: "")
+                names.insert(normalized)
+            }
+        }
+        return names
     }
 
     // MARK: - Cache scanning

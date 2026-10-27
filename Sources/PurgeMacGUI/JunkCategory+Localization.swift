@@ -11,6 +11,8 @@ extension JunkCategory {
             return L("junk.userCaches")
         case .logs:
             return L("junk.logs")
+        case .leftovers:
+            return L("junk.leftovers")
         case .browserCaches:
             return L("junk.browserCaches")
         case .developerCaches:

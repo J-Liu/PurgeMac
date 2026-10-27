@@ -7,8 +7,10 @@ import Foundation
 public enum JunkCategory: String, Codable, CaseIterable {
     /// Per-user application and system caches under `~/Library/Caches`.
     case userCaches = "caches"
-    /// Per-user log files under `~/Library/Logs`.
+    /// Per-user log files and developer junk under `~/Library/Logs` and related.
     case logs = "logs"
+    /// Orphaned files from uninstalled applications.
+    case leftovers = "leftovers"
     /// Cache directories of common web browsers.
     case browserCaches = "browser-caches"
     /// Cache directories of common developer tools.
@@ -25,6 +27,8 @@ public enum JunkCategory: String, Codable, CaseIterable {
             return "User Caches"
         case .logs:
             return "Logs"
+        case .leftovers:
+            return "App Leftovers"
         case .browserCaches:
             return "Browser Caches"
         case .developerCaches:

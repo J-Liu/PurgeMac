@@ -171,6 +171,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         // Junk Categories
         "junk.userCaches": "User Caches",
         "junk.logs": "Logs",
+        "junk.leftovers": "App Leftovers",
         "junk.browserCaches": "Browser Caches",
         "junk.developerCaches": "Developer Caches",
         "junk.largeFiles": "Large Files",
@@ -270,6 +271,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         // Junk Categories
         "junk.userCaches": "用户缓存",
         "junk.logs": "日志文件",
+        "junk.leftovers": "应用残留",
         "junk.browserCaches": "浏览器缓存",
         "junk.developerCaches": "开发者缓存",
         "junk.largeFiles": "大文件",
@@ -369,6 +371,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         // Junk Categories
         "junk.userCaches": "使用者快取",
         "junk.logs": "日誌檔案",
+        "junk.leftovers": "應用程式殘留",
         "junk.browserCaches": "瀏覽器快取",
         "junk.developerCaches": "開發者快取",
         "junk.largeFiles": "大檔案",
