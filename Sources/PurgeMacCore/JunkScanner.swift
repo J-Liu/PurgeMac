@@ -75,17 +75,9 @@ public struct JunkScanner {
     public func scan(category: JunkCategory) -> [JunkItem] {
         switch category {
         case .userCaches:
-            return scanDirectoryContents(
-                [libraryPath("Caches")],
-                category: category,
-                timeFiltered: true
-            )
+            return scanCaches()
         case .logs:
-            return scanDirectoryContents(
-                [libraryPath("Logs")],
-                category: category,
-                timeFiltered: true
-            )
+            return scanLogs()
         case .browserCaches:
             return scanItems(browserCacheDirectories(), category: category, timeFiltered: true)
         case .developerCaches:
@@ -97,6 +89,127 @@ public struct JunkScanner {
         }
     }
 
+    // MARK: - Cache scanning
+
+    /// Scans user caches directory and determines safe defaults.
+    private func scanCaches() -> [JunkItem] {
+        var items: [JunkItem] = []
+        let cachesURL = libraryPath("Caches")
+
+        guard let entries = try? FileManager.default.contentsOfDirectory(
+            at: cachesURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else {
+            return items
+        }
+
+        for entry in entries {
+            let attributes = Self.attributes(for: entry)
+            guard attributes.size > 0 else { continue }
+
+            // Determine if safe to select by default
+            let name = entry.lastPathComponent
+            let selectedByDefault = shouldSelectCacheByDefault(name: name)
+
+            items.append(
+                JunkItem(
+                    path: entry.path,
+                    size: attributes.size,
+                    category: .userCaches,
+                    lastAccessDate: attributes.lastAccessDate,
+                    selectedByDefault: selectedByDefault
+                )
+            )
+        }
+
+        return items.sorted { $0.size > $1.size }
+    }
+
+    /// Determines if a cache directory should be selected by default.
+    private func shouldSelectCacheByDefault(name: String) -> Bool {
+        // Apple system caches that may be important
+        let appleSystemCaches = [
+            "com.apple.bird",
+            "com.apple.CloudPhotosConfiguration",
+            "com.apple.ContextStoreAgent",
+            "com.apple.Messages",
+            "com.apple.PhotoBooth",
+            "com.apple.Safari",
+            "com.apple.WebKit",
+            "com.apple.coremediaassetsd",
+            "com.apple.dt.Xcode",
+            "com.apple.icloud",
+            "com.apple.imessage",
+            "com.apple.passd",
+        ]
+
+        // Check if it's an Apple system cache that might be important
+        for prefix in appleSystemCaches {
+            if name.hasPrefix(prefix) {
+                return false
+            }
+        }
+
+        // Most third-party caches are safe
+        return true
+    }
+
+    // MARK: - Log scanning
+
+    /// Scans user logs directory.
+    private func scanLogs() -> [JunkItem] {
+        var items: [JunkItem] = []
+        let logsURL = libraryPath("Logs")
+
+        guard let entries = try? FileManager.default.contentsOfDirectory(
+            at: logsURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else {
+            return items
+        }
+
+        for entry in entries {
+            let attributes = Self.attributes(for: entry)
+            guard attributes.size > 0 else { continue }
+
+            // Determine if safe to select by default
+            let name = entry.lastPathComponent
+            let selectedByDefault = shouldSelectLogByDefault(name: name)
+
+            items.append(
+                JunkItem(
+                    path: entry.path,
+                    size: attributes.size,
+                    category: .logs,
+                    lastAccessDate: attributes.lastAccessDate,
+                    selectedByDefault: selectedByDefault
+                )
+            )
+        }
+
+        return items.sorted { $0.size > $1.size }
+    }
+
+    /// Determines if a log directory should be selected by default.
+    private func shouldSelectLogByDefault(name: String) -> Bool {
+        // Some logs might be actively used or important for debugging
+        let importantLogs = [
+            "com.apple.diagnostics",
+            "com.apple.reportstability",
+        ]
+
+        for prefix in importantLogs {
+            if name.hasPrefix(prefix) {
+                return false
+            }
+        }
+
+        // Most logs are safe to clean
+        return true
+    }
+
     /// The total size in bytes across the given junk items.
     public static func totalSize(of items: [JunkItem]) -> Int64 {
         items.reduce(0) { $0 + $1.size }
@@ -104,45 +217,12 @@ public struct JunkScanner {
 
     // MARK: - Category scans
 
-    /// Scans the top-level entries inside each provided directory.
-    private func scanDirectoryContents(
-        _ directories: [URL],
-        category: JunkCategory,
-        timeFiltered: Bool
-    ) -> [JunkItem] {
-        var items: [JunkItem] = []
-        let cutoff = cutoffDate()
-
-        for directory in directories {
-            guard let entries = try? FileManager.default.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: nil,
-                options: [.skipsHiddenFiles]
-            ) else {
-                continue
-            }
-
-            for entry in entries {
-                let attributes = Self.attributes(for: entry)
-                if timeFiltered {
-                    guard let lastAccessDate = attributes.lastAccessDate, lastAccessDate < cutoff else {
-                        continue
-                    }
-                }
-                items.append(
-                    makeItem(from: entry, attributes: attributes, category: category)
-                )
-            }
-        }
-
-        return items.sorted { $0.size > $1.size }
-    }
-
     /// Treats each provided URL as a single junk item.
     private func scanItems(
         _ urls: [URL],
         category: JunkCategory,
-        timeFiltered: Bool
+        timeFiltered: Bool,
+        selectedByDefault: Bool = true
     ) -> [JunkItem] {
         var items: [JunkItem] = []
         let cutoff = cutoffDate()
@@ -155,7 +235,7 @@ public struct JunkScanner {
                     continue
                 }
             }
-            items.append(makeItem(from: url, attributes: attributes, category: category))
+            items.append(makeItem(from: url, attributes: attributes, category: category, selectedByDefault: selectedByDefault))
         }
 
         return items.sorted { $0.size > $1.size }
@@ -219,7 +299,8 @@ public struct JunkScanner {
                         path: url.path,
                         size: size,
                         category: .largeFiles,
-                        lastAccessDate: modDate
+                        lastAccessDate: modDate,
+                        selectedByDefault: false
                     )
                 )
             }
@@ -232,12 +313,13 @@ public struct JunkScanner {
         Date().addingTimeInterval(-TimeInterval(olderThanDays) * 86_400)
     }
 
-    private func makeItem(from url: URL, attributes: (size: Int64, lastAccessDate: Date?), category: JunkCategory) -> JunkItem {
+    private func makeItem(from url: URL, attributes: (size: Int64, lastAccessDate: Date?), category: JunkCategory, selectedByDefault: Bool = true) -> JunkItem {
         JunkItem(
             path: url.path,
             size: attributes.size,
             category: category,
-            lastAccessDate: attributes.lastAccessDate
+            lastAccessDate: attributes.lastAccessDate,
+            selectedByDefault: selectedByDefault
         )
     }
 

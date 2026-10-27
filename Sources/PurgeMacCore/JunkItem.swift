@@ -47,11 +47,14 @@ public struct JunkItem: Codable, Equatable {
     public let category: JunkCategory
     /// The last time the item was accessed, if it could be determined.
     public let lastAccessDate: Date?
+    /// Whether this item should be selected by default in the UI.
+    public let selectedByDefault: Bool
 
-    public init(path: String, size: Int64, category: JunkCategory, lastAccessDate: Date?) {
+    public init(path: String, size: Int64, category: JunkCategory, lastAccessDate: Date?, selectedByDefault: Bool = true) {
         self.path = path
         self.size = size
         self.category = category
         self.lastAccessDate = lastAccessDate
+        self.selectedByDefault = selectedByDefault
     }
 }

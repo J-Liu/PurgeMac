@@ -67,7 +67,8 @@ final class CleanViewController: NSViewController {
                 self?.loadingOverlay.isHidden = true
                 self?.itemsByCategory[category] = items
                 self?.currentCategory = category
-                self?.selectedIndexes = []
+                // Select items that are selectedByDefault
+                self?.selectedIndexes = Set(items.enumerated().filter { $0.element.selectedByDefault }.map { $0.offset })
                 self?.itemTableView.reloadData()
                 self?.adjustColumnWidth(for: items)
                 self?.updateSelectAllCheckboxState()
