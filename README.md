@@ -4,20 +4,33 @@ A native macOS system cleanup utility, built with pure Swift and AppKit. Clean u
 
 ## Features
 
-- **System Cleanup**: Remove system caches, logs, and temporary files
-- **User Cache Cleanup**: Clean user application caches and preferences
-- **Trash Management**: Empty trash with secure deletion options
-- **Large File Finder**: Identify and remove large files taking up space
-- **Duplicate File Detection**: Find and remove duplicate files
-- **Startup Items Management**: Control login items and startup agents
-- **Menu Bar Integration**: Quick access from the menu bar
-- **Safe Mode**: Preview changes before applying them
+### App Uninstaller
+- Uninstall applications with one click
+- Automatically finds and removes related files (caches, preferences, logs, etc.)
+- Preview leftover files before deletion
+
+### System Junk Cleanup
+- **User Caches**: Clean application caches
+- **Logs & Errors**: Remove log files and crash reports
+- **App Leftovers**: Find and clean orphaned files from uninstalled apps
+- **Large Files**: Identify large files taking up space
+- **Trash**: Empty the trash
+
+### Developer Junk Cleanup
+- **Xcode**: Derived data, archives, device logs, simulators
+- **Homebrew**: Cache and old versions
+- **Node.js**: npm/yarn caches, node_modules
+- **Python**: pip cache, __pycache__, virtualenvs
+- **Rust**: Cargo cache, target directories
+- **Go**: Go modules cache
+- **JetBrains**: IDE caches and logs
+- **VS Code**: Extensions cache
+- **Containers**: Docker and container caches
 
 ## Requirements
 
 - **macOS 13.0 (Ventura) or later**
 - Full disk access permission (for system cleanup)
-- Administrator privileges (for some system-level operations)
 
 ## Installation
 
@@ -48,8 +61,8 @@ After doing this once, the app opens normally.
 ```bash
 git clone https://github.com/J-Liu/PurgeMac.git
 cd PurgeMac
-./build.sh
-open PurgeMac.app
+swift build -c release
+open .build/out/Products/Release/PurgeMac.app
 ```
 
 Requires Swift 5.9+ and Xcode command line tools.
@@ -68,7 +81,14 @@ PurgeMac includes a command-line interface:
 
 ## Automatic Updates
 
-PurgeMac uses [Sparkle](https://sparkle-project.org/) for automatic updates. The app checks for updates on launch and can download and install them automatically.
+PurgeMac uses [Sparkle](https://sparkle-project.org/) for automatic updates. Configure update frequency in Settings:
+- At Startup
+- Daily
+- Weekly (default)
+- Monthly
+- Never
+
+Manual update checks are always available from the menu or Settings.
 
 ## Project Home
 
@@ -76,7 +96,7 @@ https://github.com/J-Liu/PurgeMac
 
 ## License
 
-This project is licensed under the Apache License 2.0.
+This project is licensed under the GNU Affero General Public License v3.0 or later.
 See [LICENSE](LICENSE) for details.
 
 Copyright © 2026 Jia Liu.
