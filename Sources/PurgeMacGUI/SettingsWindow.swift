@@ -498,7 +498,7 @@ final class SettingsWindow: NSWindow {
 
     @objc private func checkForUpdatesNow() {
         if let appDelegate = NSApp.delegate as? AppDelegate {
-            appDelegate.checkForUpdates()
+            appDelegate.updaterController.checkForUpdates(nil)
         }
     }
 

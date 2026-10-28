@@ -10,10 +10,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: SettingsWindow?
 
     /// Standard Sparkle updater controller used for the "Check for Updates" menu item.
-    let updaterController = SPUStandardUpdaterController(
+    /// Lazy initialization to allow passing self as userDriverDelegate.
+    lazy var updaterController = SPUStandardUpdaterController(
         startingUpdater: true,
         updaterDelegate: nil,
-        userDriverDelegate: nil
+        userDriverDelegate: self
     )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -163,10 +164,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let checkForUpdatesItem = NSMenuItem(
             title: L("menu.checkForUpdates"),
-            action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)),
+            action: #selector(manualCheckForUpdates),
             keyEquivalent: ""
         )
-        checkForUpdatesItem.target = updaterController
+        checkForUpdatesItem.target = self
         menu.addItem(checkForUpdatesItem)
 
         menu.addItem(.separator())
@@ -363,7 +364,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    @objc func checkForUpdates() {
+    @objc private func manualCheckForUpdates() {
         updaterController.checkForUpdates(nil)
     }
 }
@@ -375,5 +376,26 @@ extension AppDelegate: NSWindowDelegate {
         guard sender === window else { return true }
         handleWindowClose(sender)
         return false
+    }
+}
+
+// MARK: - SPUStandardUserDriverDelegate
+
+extension AppDelegate: SPUStandardUserDriverDelegate {
+    /// Returns true to enable gentle scheduled update reminders.
+    /// When true, automatic update checks will not show "no update available" dialogs.
+    var supportsGentleScheduledUpdateReminders: Bool {
+        return true
+    }
+
+    /// Called before showing a modal alert.
+    /// For silent checks, this is where we decide to show the update UI.
+    func standardUserDriverWillShowModalAlert() {
+        // Modal alert will show only if an update was found during automatic check
+    }
+
+    /// Called when the modal alert is dismissed.
+    func standardUserDriverDidReceiveUserAttention(forUpdate update: SUAppcastItem) {
+        // User has been notified about an update
     }
 }
