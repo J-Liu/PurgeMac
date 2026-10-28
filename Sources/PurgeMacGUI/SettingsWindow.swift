@@ -18,7 +18,7 @@ final class SettingsWindow: NSWindow {
     private var excludedDirs: [String] = []
 
     // Layout constants
-    private let labelWidth: CGFloat = 100
+    private let labelWidth: CGFloat = 120
     private let controlWidth: CGFloat = 200
     private let rowSpacing: CGFloat = 16
 
@@ -197,7 +197,12 @@ final class SettingsWindow: NSWindow {
         updateCheckPopup.target = self
         updateCheckPopup.action = #selector(updateCheckFrequencyChanged(_:))
         updateCheckPopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
-        stack.addArrangedSubview(makeRow(label: L("settings.updateCheck"), control: updateCheckPopup))
+
+        let checkNowButton = NSButton(title: L("settings.updateCheck.now"), target: self, action: #selector(checkForUpdatesNow))
+        let updateCheckRow = NSStackView(views: [updateCheckPopup, checkNowButton])
+        updateCheckRow.orientation = .horizontal
+        updateCheckRow.spacing = 8
+        stack.addArrangedSubview(makeRow(label: L("settings.updateCheck"), control: updateCheckRow))
 
         return wrapInTopAlignedContainer(stack)
     }
