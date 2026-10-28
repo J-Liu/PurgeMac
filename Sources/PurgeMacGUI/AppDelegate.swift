@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupMainMenu()
         createMainWindow()
         setupKeyHandlers()
+        configureUpdateCheck()
 
         // Listen for language changes
         NotificationCenter.default.addObserver(
@@ -32,6 +33,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Bring the app to the foreground when launched from a terminal.
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func configureUpdateCheck() {
+        let savedInterval = UserDefaults.standard.double(forKey: "settings.updateCheckInterval")
+        // Default to weekly if not set
+        let interval: TimeInterval
+        if !UserDefaults.standard.bool(forKey: "settings.updateCheckIntervalSet") {
+            interval = 604800 // Weekly default
+        } else {
+            interval = savedInterval
+        }
+
+        let updater = updaterController.updater
+        if interval < 0 {
+            // Never: disable all automatic checks
+            updater.automaticallyChecksForUpdates = false
+        } else if interval == 0 {
+            // At startup only: check now and disable periodic checks
+            updater.automaticallyChecksForUpdates = false
+            updater.checkForUpdatesInBackground()
+        } else {
+            updater.automaticallyChecksForUpdates = true
+            updater.updateCheckInterval = interval
+        }
+
+        // Mark that we've set the default
+        if !UserDefaults.standard.bool(forKey: "settings.updateCheckIntervalSet") {
+            UserDefaults.standard.set(true, forKey: "settings.updateCheckIntervalSet")
+            UserDefaults.standard.set(interval, forKey: "settings.updateCheckInterval")
+        }
     }
 
     private func createMainWindow() {

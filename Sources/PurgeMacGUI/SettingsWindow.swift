@@ -166,6 +166,39 @@ final class SettingsWindow: NSWindow {
         quitOnCloseCheckbox.state = UserDefaults.standard.bool(forKey: "settings.quitOnClose") ? .on : .off
         stack.addArrangedSubview(makeRow(label: L("settings.quitOnClose"), control: quitOnCloseCheckbox))
 
+        // Row: Update check frequency
+        let updateCheckPopup = NSPopUpButton()
+        let frequencies: [(key: String, interval: TimeInterval)] = [
+            ("settings.updateCheck.atStartup", 0),
+            ("settings.updateCheck.daily", 86400),
+            ("settings.updateCheck.weekly", 604800),
+            ("settings.updateCheck.monthly", 2592000),
+            ("settings.updateCheck.never", -1)
+        ]
+        for freq in frequencies {
+            updateCheckPopup.addItem(withTitle: L(freq.key))
+            updateCheckPopup.lastItem?.representedObject = freq.interval
+        }
+        // Select current value
+        let savedInterval = UserDefaults.standard.double(forKey: "settings.updateCheckInterval")
+        let selectedIndex: Int
+        if savedInterval < 0 {
+            selectedIndex = 4  // Never
+        } else if savedInterval == 0 {
+            selectedIndex = 0  // At startup
+        } else if savedInterval <= 86400 {
+            selectedIndex = 1  // Daily
+        } else if savedInterval <= 604800 {
+            selectedIndex = 2  // Weekly
+        } else {
+            selectedIndex = 3  // Monthly
+        }
+        updateCheckPopup.selectItem(at: selectedIndex)
+        updateCheckPopup.target = self
+        updateCheckPopup.action = #selector(updateCheckFrequencyChanged(_:))
+        updateCheckPopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
+        stack.addArrangedSubview(makeRow(label: L("settings.updateCheck"), control: updateCheckPopup))
+
         return wrapInTopAlignedContainer(stack)
     }
 
@@ -400,6 +433,25 @@ final class SettingsWindow: NSWindow {
     @objc private func quitOnCloseChanged(_ sender: NSButton) {
         let quitOnClose = sender.state == .on
         UserDefaults.standard.set(quitOnClose, forKey: "settings.quitOnClose")
+    }
+
+    @objc private func updateCheckFrequencyChanged(_ sender: NSPopUpButton) {
+        guard let interval = sender.selectedItem?.representedObject as? TimeInterval else { return }
+        UserDefaults.standard.set(interval, forKey: "settings.updateCheckInterval")
+        // Apply to Sparkle updater
+        if let appDelegate = NSApp.delegate as? AppDelegate {
+            let updater = appDelegate.updaterController.updater
+            if interval < 0 {
+                // Never: disable automatic checks completely
+                updater.automaticallyChecksForUpdates = false
+            } else if interval == 0 {
+                // At startup only: disable automatic checks, will check at startup
+                updater.automaticallyChecksForUpdates = false
+            } else {
+                updater.automaticallyChecksForUpdates = true
+                updater.updateCheckInterval = interval
+            }
+        }
     }
 
     @objc private func largeFileThresholdChanged(_ sender: NSTextField) {
