@@ -71,7 +71,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       run: |
         VERSION="${GITHUB_REF_NAME#v}"
-        zip -r "PurgeMac-${VERSION}.zip" PurgeMac.app
+        ditto -c -k --keepParent PurgeMac.app "PurgeMac-${VERSION}.zip"
 
     - name: Sign update
       if: startsWith(github.ref, 'refs/tags/')
