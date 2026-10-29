@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright © 2026 Jia Liu
 #
 # Builds the release executables and assembles a signed PurgeMac.app bundle.
@@ -67,7 +67,7 @@ if [ ! -d "$SPARKLE_FRAMEWORK" ]; then
 fi
 if [ -d "$SPARKLE_FRAMEWORK" ]; then
     echo "==> Copying Sparkle.framework..."
-    cp -R "$SPARKLE_FRAMEWORK" "${APP_BUNDLE}/Contents/Frameworks/"
+    cp -a "$SPARKLE_FRAMEWORK" "${APP_BUNDLE}/Contents/Frameworks/"
 fi
 
 # Add rpath for frameworks
