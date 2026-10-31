@@ -2,39 +2,39 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleName</key>
-	<string>PurgeMac</string>
 	<key>CFBundleDisplayName</key>
 	<string>PurgeMac</string>
-	<key>CFBundleIdentifier</key>
-	<string>com.jialiu.purgemac</string>
-	<key>CFBundleVersion</key>
-	<string>3</string>
-	<key>CFBundleShortVersionString</key>
-	<string>0.1.2</string>
 	<key>CFBundleExecutable</key>
 	<string>PurgeMacGUI</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>LSMinimumSystemVersion</key>
-	<string>13.0</string>
-	<key>NSPrincipalClass</key>
-	<string>NSApplication</string>
-	<key>NSHighResolutionCapable</key>
-	<true/>
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.utilities</string>
-	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 Jia Liu</string>
 	<key>CFBundleIconFile</key>
 	<string>PurgeMac</string>
 	<key>CFBundleIconName</key>
 	<string>PurgeMac</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.jialiu.purgemac</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>PurgeMac</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.3</string>
+	<key>CFBundleVersion</key>
+	<string>4</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Jia Liu</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
 	<key>SUFeedURL</key>
 	<string>https://J-Liu.github.io/PurgeMac/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-    <string>j8Tzt/L6NLPUrw5vagzFhwAlCvin1fjYYuor3sfxATw=</string>
+	<string>j8Tzt/L6NLPUrw5vagzFhwAlCvin1fjYYuor3sfxATw=</string>
 </dict>
 </plist>
