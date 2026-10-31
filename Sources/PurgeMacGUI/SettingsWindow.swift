@@ -443,20 +443,7 @@ final class SettingsWindow: NSWindow {
     @objc private func updateCheckFrequencyChanged(_ sender: NSPopUpButton) {
         guard let interval = sender.selectedItem?.representedObject as? TimeInterval else { return }
         UserDefaults.standard.set(interval, forKey: "settings.updateCheckInterval")
-        // Apply to Sparkle updater
-        if let appDelegate = NSApp.delegate as? AppDelegate {
-            let updater = appDelegate.updaterController.updater
-            if interval < 0 {
-                // Never: disable automatic checks completely
-                updater.automaticallyChecksForUpdates = false
-            } else if interval == 0 {
-                // At startup only: disable automatic checks, will check at startup
-                updater.automaticallyChecksForUpdates = false
-            } else {
-                updater.automaticallyChecksForUpdates = true
-                updater.updateCheckInterval = interval
-            }
-        }
+        // The new interval will take effect on next app launch
     }
 
     @objc private func largeFileThresholdChanged(_ sender: NSTextField) {

@@ -10,11 +10,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: SettingsWindow?
 
     /// Standard Sparkle updater controller used for the "Check for Updates" menu item.
-    /// Lazy initialization to allow passing self as userDriverDelegate.
     lazy var updaterController = SPUStandardUpdaterController(
         startingUpdater: true,
         updaterDelegate: nil,
-        userDriverDelegate: self
+        userDriverDelegate: nil
     )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -36,33 +35,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func configureUpdateCheck() {
+        // Disable Sparkle's built-in automatic check - we handle it ourselves
+        updaterController.updater.automaticallyChecksForUpdates = false
+
+        // Check if we should check for updates based on frequency setting
+        guard shouldCheckForUpdates() else { return }
+
+        // Delay to let the app settle
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            // Use background check - only shows UI if update is found
+            self?.updaterController.updater.checkForUpdatesInBackground()
+            self?.recordUpdateCheck()
+        }
+    }
+
+    private func shouldCheckForUpdates() -> Bool {
         let savedInterval = UserDefaults.standard.double(forKey: "settings.updateCheckInterval")
+
         // Default to weekly if not set
         let interval: TimeInterval
         if !UserDefaults.standard.bool(forKey: "settings.updateCheckIntervalSet") {
             interval = 604800 // Weekly default
+            UserDefaults.standard.set(true, forKey: "settings.updateCheckIntervalSet")
+            UserDefaults.standard.set(interval, forKey: "settings.updateCheckInterval")
         } else {
             interval = savedInterval
         }
 
-        let updater = updaterController.updater
-        if interval < 0 {
-            // Never: disable all automatic checks
-            updater.automaticallyChecksForUpdates = false
-        } else if interval == 0 {
-            // At startup only: check now and disable periodic checks
-            updater.automaticallyChecksForUpdates = false
-            updater.checkForUpdatesInBackground()
-        } else {
-            updater.automaticallyChecksForUpdates = true
-            updater.updateCheckInterval = interval
-        }
+        // Never: don't check
+        if interval < 0 { return false }
 
-        // Mark that we've set the default
-        if !UserDefaults.standard.bool(forKey: "settings.updateCheckIntervalSet") {
-            UserDefaults.standard.set(true, forKey: "settings.updateCheckIntervalSet")
-            UserDefaults.standard.set(interval, forKey: "settings.updateCheckInterval")
-        }
+        // At startup: always check
+        if interval == 0 { return true }
+
+        // Periodic: check if enough time has passed
+        let lastCheck = UserDefaults.standard.string(forKey: "settings.lastUpdateCheck") ?? ""
+        guard !lastCheck.isEmpty else { return true }
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        guard let lastDate = formatter.date(from: lastCheck) else { return true }
+
+        let now = Date()
+        let timeSinceLastCheck = now.timeIntervalSince(lastDate)
+
+        return timeSinceLastCheck >= interval
+    }
+
+    private func recordUpdateCheck() {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        UserDefaults.standard.set(formatter.string(from: Date()), forKey: "settings.lastUpdateCheck")
     }
 
     private func createMainWindow() {
@@ -397,6 +420,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func manualCheckForUpdates() {
         updaterController.checkForUpdates(nil)
+        recordUpdateCheck()
     }
 }
 
@@ -407,26 +431,5 @@ extension AppDelegate: NSWindowDelegate {
         guard sender === window else { return true }
         handleWindowClose(sender)
         return false
-    }
-}
-
-// MARK: - SPUStandardUserDriverDelegate
-
-extension AppDelegate: SPUStandardUserDriverDelegate {
-    /// Returns true to enable gentle scheduled update reminders.
-    /// When true, automatic update checks will not show "no update available" dialogs.
-    var supportsGentleScheduledUpdateReminders: Bool {
-        return true
-    }
-
-    /// Called before showing a modal alert.
-    /// For silent checks, this is where we decide to show the update UI.
-    func standardUserDriverWillShowModalAlert() {
-        // Modal alert will show only if an update was found during automatic check
-    }
-
-    /// Called when the modal alert is dismissed.
-    func standardUserDriverDidReceiveUserAttention(forUpdate update: SUAppcastItem) {
-        // User has been notified about an update
     }
 }
