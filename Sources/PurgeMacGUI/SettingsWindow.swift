@@ -3,6 +3,7 @@
 
 import AppKit
 import Sparkle
+import PurgeMacCore
 
 /// Settings window with tabs for General, Large Files, and About.
 final class SettingsWindow: NSWindow {
@@ -203,6 +204,11 @@ final class SettingsWindow: NSWindow {
         updateCheckRow.orientation = .horizontal
         updateCheckRow.spacing = 8
         stack.addArrangedSubview(makeRow(label: L("settings.updateCheck"), control: updateCheckRow))
+
+        // Row: Privileged Helper
+        let helperStatusButton = NSButton(title: L("settings.privilegedHelper.setup"), target: self, action: #selector(setupPrivilegedHelper))
+        helperStatusButton.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
+        stack.addArrangedSubview(makeRow(label: L("settings.privilegedHelper"), control: helperStatusButton))
 
         return wrapInTopAlignedContainer(stack)
     }
@@ -543,6 +549,38 @@ final class SettingsWindow: NSWindow {
     @objc private func checkForUpdatesNow() {
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.updaterController.checkForUpdates(nil)
+        }
+    }
+
+    @objc private func setupPrivilegedHelper() {
+        Task { @MainActor in
+            let manager = PrivilegedHelperManager.shared
+
+            if manager.isEnabled {
+                // Already enabled, show status
+                let alert = NSAlert()
+                alert.messageText = L("settings.privilegedHelper.enabled")
+                alert.informativeText = L("settings.privilegedHelper.enabledMessage")
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: L("uninstall.alert.ok"))
+                alert.runModal()
+            } else {
+                // Register and open System Settings
+                let success = manager.register()
+                manager.openSystemSettings()
+
+                // Show instruction
+                let alert = NSAlert()
+                alert.messageText = L("settings.privilegedHelper.setupTitle")
+                if success {
+                    alert.informativeText = L("settings.privilegedHelper.setupMessage")
+                } else {
+                    alert.informativeText = L("settings.privilegedHelper.setupFailed")
+                }
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: L("uninstall.alert.ok"))
+                alert.runModal()
+            }
         }
     }
 

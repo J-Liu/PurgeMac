@@ -70,7 +70,7 @@ public final class JunkCleaner {
     }
 
     /// Moves items to Trash using administrator privileges via osascript.
-    /// This prompts the user for their password.
+    /// This prompts the user for their password each time.
     public func cleanWithAdminPrivileges(_ items: [JunkItem]) -> JunkCleanResult {
         var succeeded: [JunkItem] = []
         var failures: [JunkFailure] = []

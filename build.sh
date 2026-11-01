@@ -10,6 +10,7 @@ set -euo pipefail
 APP_NAME="PurgeMac"
 GUI_NAME="PurgeMacGUI"
 CLI_NAME="PurgeMacCLI"
+HELPER_NAME="PurgeMacHelper"
 BUILD_CONFIG="release"
 
 # Resolve project root (script is in root)
@@ -23,6 +24,7 @@ swift build -c "$BUILD_CONFIG"
 BIN_DIR="$(swift build -c "$BUILD_CONFIG" --show-bin-path)"
 GUI_BINARY="${BIN_DIR}/${GUI_NAME}"
 CLI_BINARY="${BIN_DIR}/${CLI_NAME}"
+HELPER_BINARY="${BIN_DIR}/${HELPER_NAME}"
 
 if [ ! -f "$GUI_BINARY" ]; then
     echo "Error: GUI binary not found at ${GUI_BINARY}"
@@ -30,6 +32,10 @@ if [ ! -f "$GUI_BINARY" ]; then
 fi
 if [ ! -f "$CLI_BINARY" ]; then
     echo "Error: CLI binary not found at ${CLI_BINARY}"
+    exit 1
+fi
+if [ ! -f "$HELPER_BINARY" ]; then
+    echo "Error: Helper binary not found at ${HELPER_BINARY}"
     exit 1
 fi
 
@@ -41,10 +47,18 @@ rm -rf "$APP_BUNDLE"
 mkdir -p "${APP_BUNDLE}/Contents/MacOS"
 mkdir -p "${APP_BUNDLE}/Contents/Resources"
 mkdir -p "${APP_BUNDLE}/Contents/Frameworks"
+mkdir -p "${APP_BUNDLE}/Contents/Library/LaunchDaemons"
 
 # Copy executables
 cp "$GUI_BINARY" "${APP_BUNDLE}/Contents/MacOS/${GUI_NAME}"
 cp "$CLI_BINARY" "${APP_BUNDLE}/Contents/MacOS/${CLI_NAME}"
+
+# Copy privileged helper
+cp "$HELPER_BINARY" "${APP_BUNDLE}/Contents/Library/LaunchDaemons/${HELPER_NAME}"
+HELPER_PLIST="${ROOT_DIR}/Sources/PurgeMacHelper/io.github.jia-liu.PurgeMac.helper.plist"
+if [ -f "$HELPER_PLIST" ]; then
+    cp "$HELPER_PLIST" "${APP_BUNDLE}/Contents/Library/LaunchDaemons/"
+fi
 
 # Copy Info.plist from Resources/
 cp "${ROOT_DIR}/Resources/Info.plist" "${APP_BUNDLE}/Contents/Info.plist"
