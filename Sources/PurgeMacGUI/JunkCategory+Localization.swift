@@ -22,6 +22,17 @@ extension JunkCategory {
         case .devJetBrains: return L("junk.devJetBrains")
         case .devVSCode: return L("junk.devVSCode")
         case .devContainers: return L("junk.devContainers")
+        case .devDart: return L("junk.devDart")
+        case .devRuby: return L("junk.devRuby")
+        case .devPhp: return L("junk.devPhp")
+        case .devJava: return L("junk.devJava")
+        case .devTerraform: return L("junk.devTerraform")
+        case .devElectron: return L("junk.devElectron")
+        case .devGit: return L("junk.devGit")
+        case .devCI: return L("junk.devCI")
+        case .devShell: return L("junk.devShell")
+        case .devAndroid: return L("junk.devAndroid")
+        case .devScala: return L("junk.devScala")
         }
     }
 }

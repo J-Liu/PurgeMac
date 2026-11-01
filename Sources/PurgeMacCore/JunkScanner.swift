@@ -106,6 +106,28 @@ public struct JunkScanner {
             return scanDevVSCode()
         case .devContainers:
             return scanDevContainers()
+        case .devDart:
+            return scanDevDart()
+        case .devRuby:
+            return scanDevRuby()
+        case .devPhp:
+            return scanDevPhp()
+        case .devJava:
+            return scanDevJava()
+        case .devTerraform:
+            return scanDevTerraform()
+        case .devElectron:
+            return scanDevElectron()
+        case .devGit:
+            return scanDevGit()
+        case .devCI:
+            return scanDevCI()
+        case .devShell:
+            return scanDevShell()
+        case .devAndroid:
+            return scanDevAndroid()
+        case .devScala:
+            return scanDevScala()
         }
     }
 
@@ -706,6 +728,120 @@ public struct JunkScanner {
             ("\(home)/Library/Logs/OrbStack", true),
         ]
         return scanDevPaths(paths, category: .devContainers)
+    }
+
+    /// Scans Dart / Flutter caches.
+    private func scanDevDart() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.pub-cache/hosted", true),
+            ("\(home)/.pub-cache/git", true),
+            ("\(home)/.dartServer/.analysis-driver", true),
+        ]
+        return scanDevPaths(paths, category: .devDart)
+    }
+
+    /// Scans Ruby / Bundler caches.
+    private func scanDevRuby() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.gem/cache", true),
+            ("\(home)/.bundle/cache", true),
+            ("\(home)/.rbenv/cache", true),
+        ]
+        return scanDevPaths(paths, category: .devRuby)
+    }
+
+    /// Scans PHP / Composer caches.
+    private func scanDevPhp() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.composer/cache", true),
+        ]
+        return scanDevPaths(paths, category: .devPhp)
+    }
+
+    /// Scans Java / Gradle / Maven caches.
+    private func scanDevJava() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.gradle/caches", true),
+            ("\(home)/.gradle/wrapper/dists", true),
+            ("\(home)/.m2/repository", false), // Maven local repo may be needed
+        ]
+        return scanDevPaths(paths, category: .devJava)
+    }
+
+    /// Scans Terraform caches.
+    private func scanDevTerraform() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.terraform.d/plugin-cache", true),
+        ]
+        return scanDevPaths(paths, category: .devTerraform)
+    }
+
+    /// Scans Electron app caches (Slack, Discord, Notion, Figma).
+    private func scanDevElectron() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/Library/Application Support/Slack/Cache", true),
+            ("\(home)/Library/Application Support/Slack/Code Cache", true),
+            ("\(home)/Library/Application Support/discord/Cache", true),
+            ("\(home)/Library/Application Support/discord/Code Cache", true),
+            ("\(home)/Library/Application Support/Notion/Cache", true),
+            ("\(home)/Library/Application Support/Figma/Cache", true),
+        ]
+        return scanDevPaths(paths, category: .devElectron)
+    }
+
+    /// Scans Git worktrees.
+    private func scanDevGit() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.git/worktrees", false),
+        ]
+        return scanDevPaths(paths, category: .devGit)
+    }
+
+    /// Scans CI tool caches (GitHub Actions, pre-commit).
+    private func scanDevCI() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.cache/act", true),
+            ("\(home)/.cache/pre-commit", true),
+        ]
+        return scanDevPaths(paths, category: .devCI)
+    }
+
+    /// Scans Shell caches (Zsh, Oh My Zsh).
+    private func scanDevShell() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.zsh_sessions", true),
+            ("\(home)/.oh-my-zsh/cache", true),
+        ]
+        return scanDevPaths(paths, category: .devShell)
+    }
+
+    /// Scans Android SDK caches.
+    private func scanDevAndroid() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.android/cache", true),
+            ("\(home)/.android/build-cache", true),
+        ]
+        return scanDevPaths(paths, category: .devAndroid)
+    }
+
+    /// Scans Scala / SBT caches.
+    private func scanDevScala() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            ("\(home)/.ivy2/cache", true),
+            ("\(home)/.sbt/boot", true),
+        ]
+        return scanDevPaths(paths, category: .devScala)
     }
 
     // MARK: - AI Models Scanning

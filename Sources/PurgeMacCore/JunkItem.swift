@@ -40,6 +40,28 @@ public enum JunkCategory: String, Codable, CaseIterable {
     case devVSCode = "dev-vscode"
     /// Docker / OrbStack caches.
     case devContainers = "dev-containers"
+    /// Dart / Flutter caches.
+    case devDart = "dev-dart"
+    /// Ruby / Bundler caches.
+    case devRuby = "dev-ruby"
+    /// PHP / Composer caches.
+    case devPhp = "dev-php"
+    /// Java / Gradle / Maven caches.
+    case devJava = "dev-java"
+    /// Terraform caches.
+    case devTerraform = "dev-terraform"
+    /// Electron app caches.
+    case devElectron = "dev-electron"
+    /// Git worktrees.
+    case devGit = "dev-git"
+    /// CI tool caches (GitHub Actions, pre-commit).
+    case devCI = "dev-ci"
+    /// Shell caches (Zsh, Oh My Zsh).
+    case devShell = "dev-shell"
+    /// Android SDK caches.
+    case devAndroid = "dev-android"
+    /// Scala / SBT caches.
+    case devScala = "dev-scala"
 
     /// A human-readable label for UI and CLI output.
     public var displayName: String {
@@ -59,6 +81,17 @@ public enum JunkCategory: String, Codable, CaseIterable {
         case .devJetBrains: return "JetBrains"
         case .devVSCode: return "VS Code"
         case .devContainers: return "Containers"
+        case .devDart: return "Dart"
+        case .devRuby: return "Ruby"
+        case .devPhp: return "PHP"
+        case .devJava: return "Java"
+        case .devTerraform: return "Terraform"
+        case .devElectron: return "Electron"
+        case .devGit: return "Git"
+        case .devCI: return "CI"
+        case .devShell: return "Shell"
+        case .devAndroid: return "Android"
+        case .devScala: return "Scala"
         }
     }
 }

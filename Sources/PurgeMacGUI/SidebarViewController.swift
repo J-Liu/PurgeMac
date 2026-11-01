@@ -185,6 +185,17 @@ final class SidebarViewController: NSViewController {
                 SidebarItem(title: L("sidebar.dev.jetbrains"), identifier: "dev.jetbrains", iconName: "terminal.fill"),
                 SidebarItem(title: L("sidebar.dev.vscode"), identifier: "dev.vscode", iconName: "chevron.left.forwardslash.chevron.right"),
                 SidebarItem(title: L("sidebar.dev.containers"), identifier: "dev.containers", iconName: "cube.box.fill"),
+                SidebarItem(title: L("sidebar.dev.dart"), identifier: "dev.dart", iconName: "chevron.left.forwardslash.chevron.right"),
+                SidebarItem(title: L("sidebar.dev.ruby"), identifier: "dev.ruby", iconName: "gem.fill"),
+                SidebarItem(title: L("sidebar.dev.php"), identifier: "dev.php", iconName: "chevron.left.forwardslash.chevron.right"),
+                SidebarItem(title: L("sidebar.dev.java"), identifier: "dev.java", iconName: "cup.and.heat.waves.fill"),
+                SidebarItem(title: L("sidebar.dev.terraform"), identifier: "dev.terraform", iconName: "building.2.fill"),
+                SidebarItem(title: L("sidebar.dev.electron"), identifier: "dev.electron", iconName: "atom.fill"),
+                SidebarItem(title: L("sidebar.dev.git"), identifier: "dev.git", iconName: "arrow.triangle.branch"),
+                SidebarItem(title: L("sidebar.dev.ci"), identifier: "dev.ci", iconName: "arrow.triangle.2.circlepath"),
+                SidebarItem(title: L("sidebar.dev.shell"), identifier: "dev.shell", iconName: "terminal.fill"),
+                SidebarItem(title: L("sidebar.dev.android"), identifier: "dev.android", iconName: "play.rectangle.fill"),
+                SidebarItem(title: L("sidebar.dev.scala"), identifier: "dev.scala", iconName: "chevron.left.forwardslash.chevron.right"),
             ])
         ]
         // Expand System Junk by default (AI Models and Developer Tools stay collapsed)

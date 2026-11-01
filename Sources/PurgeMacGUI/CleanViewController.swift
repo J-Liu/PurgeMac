@@ -58,6 +58,28 @@ final class CleanViewController: NSViewController {
             autoScanCategory(.devVSCode)
         case "dev.containers":
             autoScanCategory(.devContainers)
+        case "dev.dart":
+            autoScanCategory(.devDart)
+        case "dev.ruby":
+            autoScanCategory(.devRuby)
+        case "dev.php":
+            autoScanCategory(.devPhp)
+        case "dev.java":
+            autoScanCategory(.devJava)
+        case "dev.terraform":
+            autoScanCategory(.devTerraform)
+        case "dev.electron":
+            autoScanCategory(.devElectron)
+        case "dev.git":
+            autoScanCategory(.devGit)
+        case "dev.ci":
+            autoScanCategory(.devCI)
+        case "dev.shell":
+            autoScanCategory(.devShell)
+        case "dev.android":
+            autoScanCategory(.devAndroid)
+        case "dev.scala":
+            autoScanCategory(.devScala)
         default:
             break
         }
