@@ -198,6 +198,8 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "uninstall.result.freed": "Freed %@",
         "uninstall.result.partial": "%d related file(s) could not be removed.",
         "uninstall.alert.failed.title": "Uninstall failed",
+        "uninstall.alert.running.title": "App is running",
+        "uninstall.alert.running.message": "%@ is currently running. Quit the app before uninstalling.",
         "uninstall.alert.ok": "OK",
 
         // Clean View
@@ -395,6 +397,8 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "uninstall.result.freed": "释放了 %@",
         "uninstall.result.partial": "%d 个相关文件无法删除。",
         "uninstall.alert.failed.title": "卸载失败",
+        "uninstall.alert.running.title": "应用正在运行",
+        "uninstall.alert.running.message": "%@ 正在运行。请先退出该应用再进行卸载。",
         "uninstall.alert.ok": "确定",
 
         // Clean View
@@ -587,6 +591,8 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "uninstall.result.freed": "釋放了 %@",
         "uninstall.result.partial": "%d 個相關檔案無法刪除。",
         "uninstall.alert.failed.title": "卸載失敗",
+        "uninstall.alert.running.title": "應用程式正在執行",
+        "uninstall.alert.running.message": "%@ 正在執行。請先結束該應用程式再進行卸載。",
         "uninstall.alert.ok": "確定",
 
         // Clean View

@@ -479,6 +479,7 @@ extension UninstallViewController: NSTableViewDataSource, NSTableViewDelegate {
     private func appCellView(for tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard let tableColumn else { return nil }
         let app = filteredApps[row]
+        let isRunning = isAppRunning(app)
         let identifier = tableColumn.identifier
 
         if identifier.rawValue == "icon" {
@@ -487,6 +488,9 @@ extension UninstallViewController: NSTableViewDataSource, NSTableViewDelegate {
             imageView.translatesAutoresizingMaskIntoConstraints = false
             imageView.imageScaling = .scaleProportionallyUpOrDown
             imageView.image = NSWorkspace.shared.icon(forFile: app.path)
+            if isRunning {
+                imageView.contentTintColor = .disabledControlTextColor
+            }
             cell.addSubview(imageView)
             NSLayoutConstraint.activate([
                 imageView.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
@@ -501,6 +505,7 @@ extension UninstallViewController: NSTableViewDataSource, NSTableViewDelegate {
         let textField = NSTextField(labelWithString: "")
         textField.translatesAutoresizingMaskIntoConstraints = false
         textField.lineBreakMode = .byTruncatingTail
+        textField.textColor = isRunning ? .disabledControlTextColor : .controlTextColor
         cell.addSubview(textField)
         cell.textField = textField
         NSLayoutConstraint.activate([
@@ -535,7 +540,26 @@ extension UninstallViewController: NSTableViewDataSource, NSTableViewDelegate {
             selectAppAsync(nil)
             return
         }
-        selectAppAsync(filteredApps[row])
+        let app = filteredApps[row]
+        
+        // Check if app is running
+        if isAppRunning(app) {
+            // Deselect and show message
+            appTableView.deselectAll(nil)
+            let alert = NSAlert()
+            alert.messageText = L("uninstall.alert.running.title")
+            alert.informativeText = L("uninstall.alert.running.message", app.name)
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: L("uninstall.alert.ok"))
+            alert.runModal()
+            return
+        }
+        
+        selectAppAsync(app)
+    }
+    
+    private func isAppRunning(_ app: InstalledApp) -> Bool {
+        NSRunningApplication.runningApplications(withBundleIdentifier: app.bundleID).first != nil
     }
 }
 
