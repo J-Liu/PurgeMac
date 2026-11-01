@@ -172,8 +172,8 @@ final class SidebarViewController: NSViewController {
                 SidebarItem(title: L("sidebar.clean.leftovers"), identifier: "clean.leftovers", iconName: "tray.2.fill"),
                 SidebarItem(title: L("sidebar.clean.largeFiles"), identifier: "clean.largeFiles", iconName: "externaldrive.fill"),
             ]),
-            SidebarItem(title: L("sidebar.aiModels"), identifier: "clean.aiModels", iconName: "brain.head.profile"),
             SidebarItem(title: L("sidebar.developer"), identifier: "developer", iconName: "hammer.fill", children: [
+                SidebarItem(title: L("sidebar.aiModels"), identifier: "clean.aiModels", iconName: "brain.head.profile"),
                 SidebarItem(title: L("sidebar.dev.xcode"), identifier: "dev.xcode", iconName: "app.fill"),
                 SidebarItem(title: L("sidebar.dev.homebrew"), identifier: "dev.homebrew", iconName: "mug.fill"),
                 SidebarItem(title: L("sidebar.dev.node"), identifier: "dev.node", iconName: "cube.fill"),
@@ -196,9 +196,9 @@ final class SidebarViewController: NSViewController {
                 SidebarItem(title: L("sidebar.dev.scala"), identifier: "dev.scala", iconName: "chevron.left.forwardslash.chevron.right"),
             ])
         ]
-        // Expand System Junk and Developer Tools by default (AI Models stays collapsed)
+        // Expand System Junk and Developer Tools by default
         rootItems[1].isExpanded = true
-        rootItems[3].isExpanded = true
+        rootItems[2].isExpanded = true
         flattenItems()
     }
 
