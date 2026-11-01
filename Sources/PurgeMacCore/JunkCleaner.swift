@@ -77,8 +77,9 @@ public final class JunkCleaner {
         var freedBytes: Int64 = 0
 
         for item in items {
-            let escapedPath = item.path.replacingOccurrences(of: "\"", with: "\\\"")
-            let script = "do shell script \"rm -rf '\(escapedPath)'\" with administrator privileges"
+            let escapedPath = item.path.replacingOccurrences(of: "'", with: "'\\''")
+            // Use a more robust deletion: clear flags and xattrs, then remove
+            let script = "do shell script \"chflags -R nouchg,noschg '\(escapedPath)' 2>/dev/null; xattr -cr '\(escapedPath)' 2>/dev/null; rm -rf '\(escapedPath)'\" with administrator privileges"
 
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
