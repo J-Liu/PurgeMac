@@ -201,6 +201,10 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "uninstall.alert.running.title": "App is running",
         "uninstall.alert.running.message": "%@ is currently running. Quit the app before uninstalling.",
         "uninstall.alert.ok": "OK",
+        "uninstall.self.title": "Uninstall PurgeMac?",
+        "uninstall.self.message": "PurgeMac and its related files will be moved to the Trash.",
+        "uninstall.self.uninstall": "Uninstall",
+        "uninstall.self.failed": "Uninstall failed",
 
         // Clean View
         "clean.status.initial": "Click Scan next to a category to inspect it.",
@@ -260,6 +264,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         // Main Menu
         "menu.about": "About %@",
         "menu.checkForUpdates": "Check for Updates...",
+        "menu.uninstall": "Uninstall PurgeMac",
         "menu.quit": "Quit %@",
         "menu.preferences": "Preferences...",
         "menu.hide": "Hide %@",
@@ -400,6 +405,10 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "uninstall.alert.running.title": "应用正在运行",
         "uninstall.alert.running.message": "%@ 正在运行。请先退出该应用再进行卸载。",
         "uninstall.alert.ok": "确定",
+        "uninstall.self.title": "卸载 PurgeMac？",
+        "uninstall.self.message": "PurgeMac 及其相关文件将被移至废纸篓。",
+        "uninstall.self.uninstall": "卸载",
+        "uninstall.self.failed": "卸载失败",
 
         // Clean View
         "clean.status.initial": "点击类别旁的扫描按钮进行检查。",
@@ -459,6 +468,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         // Main Menu
         "menu.about": "关于 %@",
         "menu.checkForUpdates": "检查更新...",
+        "menu.uninstall": "卸载 PurgeMac",
         "menu.quit": "退出 %@",
         "menu.preferences": "偏好设置...",
         "menu.hide": "隐藏 %@",
@@ -594,6 +604,10 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "uninstall.alert.running.title": "應用程式正在執行",
         "uninstall.alert.running.message": "%@ 正在執行。請先結束該應用程式再進行卸載。",
         "uninstall.alert.ok": "確定",
+        "uninstall.self.title": "卸載 PurgeMac？",
+        "uninstall.self.message": "PurgeMac 及其相關檔案將被移至垃圾桶。",
+        "uninstall.self.uninstall": "卸載",
+        "uninstall.self.failed": "卸載失敗",
 
         // Clean View
         "clean.status.initial": "點擊類別旁的掃描按進行查。",
@@ -653,6 +667,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         // Main Menu
         "menu.about": "關於 %@",
         "menu.checkForUpdates": "檢查更新...",
+        "menu.uninstall": "卸載 PurgeMac",
         "menu.quit": "結束 %@",
         "menu.preferences": "偏好設定...",
         "menu.hide": "隱藏 %@",

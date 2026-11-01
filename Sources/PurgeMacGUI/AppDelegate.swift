@@ -226,6 +226,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
+        let uninstallItem = NSMenuItem(
+            title: L("menu.uninstall"),
+            action: #selector(uninstallSelf),
+            keyEquivalent: ""
+        )
+        uninstallItem.target = self
+        menu.addItem(uninstallItem)
+
+        menu.addItem(.separator())
+
         let hideItem = NSMenuItem(
             title: L("menu.hide", appName),
             action: #selector(NSApplication.hide(_:)),
@@ -421,6 +431,73 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func manualCheckForUpdates() {
         updaterController.checkForUpdates(nil)
         recordUpdateCheck()
+    }
+
+    @objc func uninstallSelf() {
+        let alert = NSAlert()
+        alert.messageText = L("uninstall.self.title")
+        alert.informativeText = L("uninstall.self.message")
+        alert.alertStyle = .critical
+        alert.addButton(withTitle: L("uninstall.self.uninstall"))
+        alert.addButton(withTitle: L("uninstall.alert.confirm.cancel"))
+        
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        
+        // Create uninstall script
+        let scriptPath = FileManager.default.temporaryDirectory.appendingPathComponent("uninstall_purgemac.sh")
+        let appPath = Bundle.main.bundlePath
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.jialiu.purgemac"
+        
+        // Use osascript to move to Trash
+        let script = """
+        #!/bin/bash
+        # Wait for app to quit
+        sleep 2
+        
+        # Move app bundle to Trash
+        osascript -e "tell application \\"Finder\\" to move POSIX file \\"\(appPath)\\" to trash" 2>/dev/null
+        
+        # Move preferences to Trash
+        osascript -e "tell application \\"Finder\\" to move POSIX file \\"$HOME/Library/Preferences/\(bundleID).plist\\" to trash" 2>/dev/null
+        
+        # Move caches to Trash
+        osascript -e "tell application \\"Finder\\" to move POSIX file \\"$HOME/Library/Caches/\(bundleID)\\" to trash" 2>/dev/null
+        
+        # Move application support to Trash
+        osascript -e "tell application \\"Finder\\" to move POSIX file \\"$HOME/Library/Application Support/PurgeMac\\" to trash" 2>/dev/null
+        
+        # Move container to Trash (if exists)
+        osascript -e "tell application \\"Finder\\" to move POSIX file \\"$HOME/Library/Containers/\(bundleID)\\" to trash" 2>/dev/null
+        
+        # Delete this script
+        rm -f "\(scriptPath.path)"
+        """
+        
+        do {
+            try script.write(to: scriptPath, atomically: true, encoding: .utf8)
+            
+            // Make script executable
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/bin/chmod")
+            task.arguments = ["+x", scriptPath.path]
+            try task.run()
+            task.waitUntilExit()
+            
+            // Launch script and quit
+            let scriptTask = Process()
+            scriptTask.executableURL = URL(fileURLWithPath: scriptPath.path)
+            try scriptTask.run()
+            
+            // Quit app
+            NSApp.terminate(nil)
+        } catch {
+            let errorAlert = NSAlert()
+            errorAlert.messageText = L("uninstall.self.failed")
+            errorAlert.informativeText = error.localizedDescription
+            errorAlert.alertStyle = .critical
+            errorAlert.addButton(withTitle: L("uninstall.alert.ok"))
+            errorAlert.runModal()
+        }
     }
 }
 

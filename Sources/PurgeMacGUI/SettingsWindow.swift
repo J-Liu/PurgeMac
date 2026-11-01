@@ -204,6 +204,14 @@ final class SettingsWindow: NSWindow {
         updateCheckRow.spacing = 8
         stack.addArrangedSubview(makeRow(label: L("settings.updateCheck"), control: updateCheckRow))
 
+        // Row: Uninstall
+        let uninstallButton = NSButton(title: L("menu.uninstall"), target: self, action: #selector(uninstallSelf))
+        let attrs: [NSAttributedString.Key: Any] = [
+            .foregroundColor: NSColor.systemRed
+        ]
+        uninstallButton.attributedTitle = NSAttributedString(string: L("menu.uninstall"), attributes: attrs)
+        stack.addArrangedSubview(makeRow(label: "", control: uninstallButton))
+
         return wrapInTopAlignedContainer(stack)
     }
 
@@ -543,6 +551,12 @@ final class SettingsWindow: NSWindow {
     @objc private func checkForUpdatesNow() {
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.updaterController.checkForUpdates(nil)
+        }
+    }
+
+    @objc private func uninstallSelf() {
+        if let appDelegate = NSApp.delegate as? AppDelegate {
+            appDelegate.uninstallSelf()
         }
     }
 
