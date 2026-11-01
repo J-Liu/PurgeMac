@@ -61,7 +61,7 @@ public enum LeftoverCategory: String, Codable, CaseIterable {
 }
 
 /// A single leftover file or directory associated with an uninstalled app.
-public struct LeftoverItem: Codable, Equatable {
+public struct LeftoverItem: Codable, Equatable, Hashable {
     /// The absolute filesystem path.
     public let path: String
     /// The total size in bytes of the file or directory tree.

@@ -22,8 +22,8 @@ final class UninstallViewController: NSViewController {
     private var apps: [InstalledApp] = []
     private var filteredApps: [InstalledApp] = []
     private var selectedApp: InstalledApp?
-    private var leftovers: [LeftoverItem] = []
-    private var selectedLeftoverIndexes: Set<Int> = []
+    private var relatedItems: [AppRelatedItem] = []
+    private var selectedRelatedIndexes: Set<Int> = []
     private var isLoadingApps = false
     private var isLoadingLeftovers = false
 
@@ -276,25 +276,25 @@ final class UninstallViewController: NSViewController {
         uninstallButton.isHidden = true
         detailLabel.stringValue = "\(app.name) — v\(app.version)\n\(app.path)"
         statusLabel.stringValue = L("uninstall.scanning.leftovers")
-        leftovers = []
-        selectedLeftoverIndexes.removeAll()
+        relatedItems = []
+        selectedRelatedIndexes.removeAll()
         leftoverTableView.reloadData()
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let scannedLeftovers = LeftoverScanner().scan(bundleID: app.bundleID, appName: app.name)
+            let scannedItems = AppRelatedScanner().scan(bundleID: app.bundleID, appName: app.name, appPath: app.path)
             DispatchQueue.main.async {
                 guard let self = self, self.selectedApp?.bundleID == app.bundleID else { return }
                 self.isLoadingLeftovers = false
                 self.leftoverProgressIndicator.stopAnimation(nil)
                 self.leftoverLoadingOverlay.isHidden = true
-                self.leftovers = scannedLeftovers
-                let totalSize = LeftoverScanner.totalSize(of: scannedLeftovers)
+                self.relatedItems = scannedItems
+                let totalSize = AppRelatedScanner.totalSize(of: scannedItems)
                 let sizeStr = Self.formatBytes(totalSize)
                 self.detailLabel.stringValue = "\(app.name) — v\(app.version)\n\(app.path) — \(sizeStr)"
-                self.statusLabel.stringValue = scannedLeftovers.isEmpty
+                self.statusLabel.stringValue = scannedItems.isEmpty
                     ? L("uninstall.leftover.none")
-                    : L("uninstall.leftover.count", scannedLeftovers.count)
-                self.selectAllCheckbox.isHidden = scannedLeftovers.isEmpty
+                    : L("uninstall.leftover.count", scannedItems.count)
+                self.selectAllCheckbox.isHidden = scannedItems.isEmpty
                 self.updateSelectAllCheckboxState()
                 self.updateUninstallButtonVisibility()
                 self.leftoverTableView.reloadData()
@@ -322,8 +322,8 @@ final class UninstallViewController: NSViewController {
 
     private func clearSelection() {
         selectedApp = nil
-        leftovers = []
-        selectedLeftoverIndexes.removeAll()
+        relatedItems = []
+        selectedRelatedIndexes.removeAll()
         detailLabel.stringValue = L("uninstall.select.prompt")
         statusLabel.stringValue = ""
         selectAllCheckbox.isHidden = true
@@ -345,16 +345,32 @@ final class UninstallViewController: NSViewController {
             return
         }
 
-        let leftoversToClean = leftovers.enumerated()
-            .filter { selectedLeftoverIndexes.contains($0.offset) }
+        let itemsToClean = relatedItems.enumerated()
+            .filter { selectedRelatedIndexes.contains($0.offset) }
             .map(\.element)
 
-        let alert = NSAlert()
-        alert.messageText = L("uninstall.alert.confirm.title", app.name)
-        var informative = L("uninstall.alert.confirm.message")
-        if !leftoversToClean.isEmpty {
-            informative = L("uninstall.alert.confirm.message.withLeftovers", leftoversToClean.count)
+        // Check if the app bundle itself is selected for deletion
+        let appBundleSelected = itemsToClean.contains { $0.path == app.path }
+
+        // If nothing is selected, show a message
+        if itemsToClean.isEmpty {
+            let alert = NSAlert()
+            alert.messageText = L("uninstall.alert.noSelection.title")
+            alert.informativeText = L("uninstall.alert.noSelection.message")
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: L("uninstall.alert.ok"))
+            alert.runModal()
+            return
         }
+
+        let alert = NSAlert()
+        if appBundleSelected {
+            alert.messageText = L("uninstall.alert.confirm.title", app.name)
+        } else {
+            alert.messageText = L("uninstall.alert.cleanLeftovers.title", app.name)
+        }
+        let itemCount = itemsToClean.count
+        let informative = L("uninstall.alert.confirm.moveItems", itemCount)
         alert.informativeText = informative
         alert.alertStyle = .warning
         alert.addButton(withTitle: L("uninstall.alert.confirm.uninstall"))
@@ -362,43 +378,34 @@ final class UninstallViewController: NSViewController {
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         let appCopy = app
-        let leftoversCopy = leftoversToClean
+        let itemsCopy = itemsToClean
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            do {
-                try Uninstaller().uninstallApp(appCopy)
-                let cleanResult = LeftoverCleaner().clean(leftoversCopy)
+            let cleanResult = AppRelatedCleaner().clean(itemsCopy)
 
-                DispatchQueue.main.async {
-                    var message = L("uninstall.result.moved", appCopy.name)
+            DispatchQueue.main.async {
+                var message = L("uninstall.result.movedItems", cleanResult.freedBytes > 0 ? Self.formatBytes(cleanResult.freedBytes) : "0 B")
+                if appBundleSelected {
+                    message = L("uninstall.result.moved", appCopy.name)
                     message += "\n" + L("uninstall.result.freed", Self.formatBytes(cleanResult.freedBytes))
-                    if !cleanResult.failures.isEmpty {
-                        message += "\n" + L("uninstall.result.partial", cleanResult.failures.count)
-                    }
-                    self?.statusLabel.stringValue = message
-                    self?.selectedApp = nil
-                    self?.refreshAppsAsync()
-                    // Notify that files were deleted
-                    NotificationCenter.default.post(name: .filesDeleted, object: nil)
                 }
-            } catch {
-                DispatchQueue.main.async {
-                    let errorAlert = NSAlert()
-                    errorAlert.messageText = L("uninstall.alert.failed.title")
-                    errorAlert.informativeText = error.localizedDescription
-                    errorAlert.alertStyle = .critical
-                    errorAlert.addButton(withTitle: L("uninstall.alert.ok"))
-                    errorAlert.runModal()
+                if !cleanResult.failures.isEmpty {
+                    message += "\n" + L("uninstall.result.partial", cleanResult.failures.count)
                 }
+                self?.statusLabel.stringValue = message
+                self?.selectedApp = nil
+                self?.refreshAppsAsync()
+                // Notify that files were deleted
+                NotificationCenter.default.post(name: .filesDeleted, object: nil)
             }
         }
     }
 
     @objc private func leftoverCheckboxToggled(_ sender: NSButton) {
         if sender.state == .on {
-            selectedLeftoverIndexes.insert(sender.tag)
+            selectedRelatedIndexes.insert(sender.tag)
         } else {
-            selectedLeftoverIndexes.remove(sender.tag)
+            selectedRelatedIndexes.remove(sender.tag)
         }
         updateSelectAllCheckboxState()
         updateUninstallButtonVisibility()
@@ -406,24 +413,24 @@ final class UninstallViewController: NSViewController {
 
     @objc private func selectAllLeftoversToggled(_ sender: NSButton) {
         if sender.state == .on {
-            for i in 0..<leftovers.count {
-                selectedLeftoverIndexes.insert(i)
+            for i in 0..<relatedItems.count {
+                selectedRelatedIndexes.insert(i)
             }
         } else {
-            selectedLeftoverIndexes.removeAll()
+            selectedRelatedIndexes.removeAll()
         }
         leftoverTableView.reloadData()
         updateUninstallButtonVisibility()
     }
 
     private func updateSelectAllCheckboxState() {
-        if leftovers.isEmpty {
+        if relatedItems.isEmpty {
             selectAllCheckbox.state = .off
             selectAllCheckbox.isEnabled = false
-        } else if selectedLeftoverIndexes.count == leftovers.count {
+        } else if selectedRelatedIndexes.count == relatedItems.count {
             selectAllCheckbox.state = .on
             selectAllCheckbox.isEnabled = true
-        } else if selectedLeftoverIndexes.isEmpty {
+        } else if selectedRelatedIndexes.isEmpty {
             selectAllCheckbox.state = .off
             selectAllCheckbox.isEnabled = true
         } else {
@@ -442,7 +449,7 @@ final class UninstallViewController: NSViewController {
 
     private func updateUninstallButtonVisibility() {
         // Show uninstall button only when at least one related file is selected
-        uninstallButton.isHidden = selectedLeftoverIndexes.isEmpty
+        uninstallButton.isHidden = selectedRelatedIndexes.isEmpty
     }
 
     private static func formatBytes(_ bytes: Int64) -> String {
@@ -459,7 +466,7 @@ extension UninstallViewController: NSTableViewDataSource, NSTableViewDelegate {
         if tableView === appTableView {
             return filteredApps.count
         }
-        return leftovers.count
+        return relatedItems.count
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
@@ -512,12 +519,12 @@ extension UninstallViewController: NSTableViewDataSource, NSTableViewDelegate {
     }
 
     private func leftoverCellView(row: Int) -> NSView? {
-        guard row < leftovers.count else { return nil }
-        let item = leftovers[row]
+        guard row < relatedItems.count else { return nil }
+        let item = relatedItems[row]
         let checkbox = NSButton(checkboxWithTitle: "", target: self, action: #selector(leftoverCheckboxToggled))
         checkbox.title = "[\(item.category.rawValue)] \(item.path) — \(Self.formatBytes(item.size))"
         checkbox.tag = row
-        checkbox.state = selectedLeftoverIndexes.contains(row) ? .on : .off
+        checkbox.state = selectedRelatedIndexes.contains(row) ? .on : .off
         return checkbox
     }
 
