@@ -106,118 +106,86 @@ public struct JunkScanner {
         }
     }
 
-    // MARK: - Leftovers scanning
+    // MARK: - Cache scanning (System Junk)
 
-    /// System prefixes that should never be flagged as orphans.
-    private static let skipReverse: Set<String> = [
-        // Apple & System
-        "apple", "temporary", "btserver", "proapps", "scripteditor", "ilife",
-        "livefsd", "siritoday", "addressbook", "animoji", "appstore",
-        "askpermission", "callhistory", "clouddocs", "diskimages", "dock",
-        "facetime", "fileprovider", "instruments", "knowledge", "mobilesync",
-        "syncservices", "homeenergyd", "icloud", "icdd", "networkserviceproxy",
-        "familycircle", "geoservices", "installation", "passkit",
-        "sharedimagecache", "desktop", "mbuseragent", "swiftpm", "baseband",
-        "coresimulator", "photoslegacyupgrade", "photosupgrade", "siritts",
-        "ipod", "globalpreferences",
-        // Analytics & Telemetry
-        "apmanalytics", "apmexperiment", "avatarcache", "byhost",
-        "contextstoreagent", "mobilemeaccounts", "mobiledocuments", "mobile",
-        "intentbuilderc", "loginwindow", "momc", "replayd", "sharedfilelistd",
-        // Build Tools & Compilers
-        "clang", "audiocomponent", "csexattrcryptoservice",
-        "livetranscriptionagent", "sandboxhelper", "statuskitagent",
-        // System Daemons
-        "betaenrollmentd", "contentlinkingd", "diagnosticextensionsd", "gamed",
-        "heard", "homed", "itunescloudd", "lldb", "mds", "mediaanalysisd",
-        "metrickitd", "mobiletimerd", "proactived", "ptpcamerad", "studentd",
-        "talagent", "watchlistd", "apptranslocation", "xcrun",
-        // Generic Infrastructure
-        "ds_store", "caches", "crashreporter", "trash",
-        // Common SDKs and Shared Components
-        "amsdatamigratortool", "arfilecache", "assistant", "chromium",
-        "cloudkit", "webkit", "databases", "diagnostic", "cache", "gamekit",
-        "homebrew", "logi", "microsoft", "mozilla", "sync", "google",
-        "sentinel", "hexnode", "sentry", "tvappservices", "reminders", "pbs",
-        "notarytool", "differentialprivacy", "storeassetd", "webpush",
-        "storedownloadd", "fsck", "crash", "python", "discrecording",
-        "photossearch", "pylint", "jamf", "scopedbookmarkagent", "anonymous",
-        "identifier", "isolated", "nobackup", "privacypreservingmeasurement",
-        "symbols", "stickersd", "privatecloudcomputed", "tipsd",
-        "controlcenter", "contactsd", "staticcheck", "index", "segment",
-        "sparkle", "summaryevents", "launchdarkly", "identityservicesd",
-        "embeddedbinaryvalidationutility", "aaprofilepicture", "minilauncher",
-        "jna", "automator", "locationaccessstored", "spotlight", "cef"
-    ]
-
-    /// Blocked path fragments that should never appear in orphan results.
-    private static let blockedFragments: [String] = [
-        "/Library/Preferences",
-        "/Library/PreferencePanes",
-        "/Library/Containers",
-        "/Library/Group Containers",
-        "/Library/Application Scripts",
-        "/Library/LaunchAgents",
-        "/Library/LaunchDaemons",
-        "/Library/PrivilegedHelperTools",
-        "/Library/Keychains",
-        "/Library/Mail",
-        "/Library/Safari",
-        "/Library/Messages",
-        "/Library/Calendars",
-        "/Library/Accounts",
-        "/Library/Mobile Documents",
-        "/Library/CloudStorage",
-    ]
-
-    /// Scans for orphaned files from uninstalled applications.
-    private func scanLeftovers() -> [JunkItem] {
+    /// Scans user caches directory and determines safe defaults.
+    /// Strategy from purge-app's CacheScanner:
+    /// - Scan ~/Library/Caches for app caches
+    /// - Check safety policy for each item
+    /// - Most third-party caches are safe to clean
+    private func scanCaches() -> [JunkItem] {
         var items: [JunkItem] = []
+        let cachesURL = libraryPath("Caches")
         let fm = FileManager.default
-        let home = fm.homeDirectoryForCurrentUser.path
 
-        // Get installed app identifiers for filtering
-        let knownAppIDs = Self.getInstalledAppIdentifiers()
-        let knownAppNames = Self.getInstalledAppNames()
+        guard let entries = try? fm.contentsOfDirectory(
+            at: cachesURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else {
+            return items
+        }
 
-        // Only scan safe volatile data directories
-        let searchPaths: [String] = [
-            "\(home)/Library/Caches",
-            "\(home)/Library/Logs",
-            "\(home)/Library/Saved Application State",
-            "\(home)/Library/HTTPStorages",
-            "\(home)/Library/WebKit",
-            "/Library/Caches",
-            "/Library/Logs",
-        ]
+        for entry in entries {
+            let name = entry.lastPathComponent
 
-        for searchPath in searchPaths {
-            let url = URL(fileURLWithPath: searchPath)
-            guard let entries = try? fm.contentsOfDirectory(
-                at: url,
-                includingPropertiesForKeys: nil,
-                options: [.skipsHiddenFiles]
-            ) else { continue }
+            // Skip Apple system caches that may be important
+            let appleSystemCaches = [
+                "com.apple.bird",
+                "com.apple.CloudPhotosConfiguration",
+                "com.apple.ContextStoreAgent",
+                "com.apple.Messages",
+                "com.apple.PhotoBooth",
+                "com.apple.Safari",
+                "com.apple.WebKit",
+                "com.apple.coremediaassetsd",
+                "com.apple.dt.Xcode",
+                "com.apple.icloud",
+                "com.apple.imessage",
+                "com.apple.passd",
+            ]
 
-            for entry in entries {
-                let name = entry.lastPathComponent
-                let normalized = name.normalizedForMatching()
+            let isAppleSystemCache = appleSystemCaches.contains { name.hasPrefix($0) }
 
-                // Skip known system items using skipReverse
-                if Self.skipReverse.contains(where: { normalized.hasPrefix($0) }) { continue }
+            let attributes = Self.attributes(for: entry)
+            guard attributes.size > 0 else { continue }
 
-                // Skip Apple items
-                if name.lowercased().hasPrefix("com.apple.") { continue }
+            items.append(
+                JunkItem(
+                    path: entry.path,
+                    size: attributes.size,
+                    category: .userCaches,
+                    lastAccessDate: attributes.lastAccessDate,
+                    selectedByDefault: !isAppleSystemCache
+                )
+            )
+        }
 
-                // Check if this item belongs to any known app
-                let belongsToKnownApp = knownAppIDs.contains(where: { normalized.contains($0) }) ||
-                                        knownAppNames.contains(where: { normalized.contains($0) })
+        return items.sorted { $0.size > $1.size }
+    }
 
-                if belongsToKnownApp { continue }
+    // MARK: - Log scanning (Logs and Error Reports)
 
-                // Final safety check: ensure path doesn't contain blocked fragments
-                let lowerPath = entry.path.lowercased()
-                if Self.blockedFragments.contains(where: { lowerPath.contains($0.lowercased()) }) { continue }
+    /// Scans log files and crash reports.
+    /// Strategy from purge-app:
+    /// - Application Logs: ~/Library/Logs (excluding DiagnosticReports)
+    /// - Crash Reports: ~/Library/Logs/DiagnosticReports
+    /// - Font Cache: ~/Library/Caches/com.apple.ATS
+    private func scanLogs() -> [JunkItem] {
+        var items: [JunkItem] = []
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let fm = FileManager.default
+
+        // Application Logs - each subfolder as separate item (excluding DiagnosticReports)
+        let logsDir = home.appendingPathComponent("Library/Logs", isDirectory: true)
+        if let entries = try? fm.contentsOfDirectory(
+            at: logsDir,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) {
+            for entry in entries.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                // Skip DiagnosticReports - handled separately
+                if entry.lastPathComponent == "DiagnosticReports" { continue }
 
                 let attributes = Self.attributes(for: entry)
                 guard attributes.size > 0 else { continue }
@@ -226,9 +194,43 @@ public struct JunkScanner {
                     JunkItem(
                         path: entry.path,
                         size: attributes.size,
-                        category: .leftovers,
+                        category: .logs,
                         lastAccessDate: attributes.lastAccessDate,
-                        selectedByDefault: false
+                        selectedByDefault: true
+                    )
+                )
+            }
+        }
+
+        // Crash Reports
+        let crashReportsDir = home.appendingPathComponent("Library/Logs/DiagnosticReports", isDirectory: true)
+        if fm.fileExists(atPath: crashReportsDir.path) {
+            let attributes = Self.attributes(for: crashReportsDir)
+            if attributes.size > 0 {
+                items.append(
+                    JunkItem(
+                        path: crashReportsDir.path,
+                        size: attributes.size,
+                        category: .logs,
+                        lastAccessDate: attributes.lastAccessDate,
+                        selectedByDefault: true
+                    )
+                )
+            }
+        }
+
+        // Font Cache
+        let fontCacheDir = home.appendingPathComponent("Library/Caches/com.apple.ATS", isDirectory: true)
+        if fm.fileExists(atPath: fontCacheDir.path) {
+            let attributes = Self.attributes(for: fontCacheDir)
+            if attributes.size > 0 {
+                items.append(
+                    JunkItem(
+                        path: fontCacheDir.path,
+                        size: attributes.size,
+                        category: .logs,
+                        lastAccessDate: attributes.lastAccessDate,
+                        selectedByDefault: true
                     )
                 )
             }
@@ -237,50 +239,355 @@ public struct JunkScanner {
         return items.sorted { $0.size > $1.size }
     }
 
-    /// Gets bundle identifiers of installed applications.
-    private static func getInstalledAppIdentifiers() -> Set<String> {
-        var identifiers = Set<String>()
-        let appPaths = [
-            "/Applications",
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path
+    // MARK: - Leftovers scanning (Orphan files from uninstalled apps)
+
+    /// Minimum days before a leftover is considered stale enough to offer.
+    private static let minimumStaleDays = 30
+
+    /// Minimum number of installed apps for a complete view.
+    private static let minimumPlausibleAppCount = 5
+
+    /// Scans for orphaned files from uninstalled applications.
+    /// Uses purge-app's OrphanLeftoverScanPolicy strategy:
+    /// - Only offer items whose owner is confirmed gone
+    /// - Items must be untouched for minimumStaleDays
+    /// - Never offer Apple system items
+    /// - Items are NOT selected by default
+    private func scanLeftovers() -> [JunkItem] {
+        var items: [JunkItem] = []
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+
+        // Build index of installed apps
+        let installedIndex = Self.makeInstalledAppIndex()
+        guard installedIndex.looksComplete else { return [] }
+
+        // Staleness cutoff
+        let cutoff = Date().addingTimeInterval(-Double(Self.minimumStaleDays) * 24 * 60 * 60)
+
+        // Orphan roots to scan (from purge-app's OrphanLeftoverScanPolicy.orphanRoots)
+        let orphanRoots: [URL] = [
+            home.appendingPathComponent("Library/Application Support", isDirectory: true),
+            home.appendingPathComponent("Library/Containers", isDirectory: true),
+            home.appendingPathComponent("Library/Group Containers", isDirectory: true),
+            home.appendingPathComponent("Library/HTTPStorages", isDirectory: true),
+            home.appendingPathComponent("Library/Saved Application State", isDirectory: true),
         ]
 
-        for appPath in appPaths {
-            guard let contents = try? FileManager.default.contentsOfDirectory(atPath: appPath) else { continue }
-            for item in contents where item.hasSuffix(".app") {
-                let appURL = URL(fileURLWithPath: appPath).appendingPathComponent(item)
-                if let bundle = Bundle(url: appURL),
-                   let bundleID = bundle.bundleIdentifier {
-                    // Normalize for matching (remove dots, dashes, underscores)
-                    let normalized = bundleID.replacingOccurrences(of: "-", with: "")
-                                            .replacingOccurrences(of: "_", with: "")
-                                            .replacingOccurrences(of: ".", with: "")
-                                            identifiers.insert(normalized)
+        var seen = Set<String>()
+
+        for root in orphanRoots {
+            guard let entries = try? fm.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ) else { continue }
+
+            for entry in entries {
+                let name = entry.lastPathComponent
+                let lowerName = name.lowercased()
+
+                // Skip Apple identifiers
+                if lowerName.hasPrefix("com.apple.") || lowerName.contains(".com.apple.") {
+                    continue
                 }
+
+                // Extract owner from entry name
+                guard let owner = Self.candidateOwner(entryName: name, url: entry) else { continue }
+
+                // Check if orphaned (no installed app owns it)
+                guard Self.isOrphan(owner: owner, installed: installedIndex) else { continue }
+
+                // Check staleness - must be untouched since cutoff
+                guard case .untouchedSince(let lastModified) = Self.contentAge(of: entry, cutoff: cutoff) else {
+                    continue
+                }
+
+                // Avoid duplicates
+                let key = entry.standardizedFileURL.path
+                guard !seen.contains(key) else { continue }
+                seen.insert(key)
+
+                let size = Self.size(of: entry)
+                guard size > 0 else { continue }
+
+                items.append(
+                    JunkItem(
+                        path: entry.path,
+                        size: size,
+                        category: .leftovers,
+                        lastAccessDate: lastModified,
+                        selectedByDefault: false // Never pre-select orphan data
+                    )
+                )
             }
         }
-        return identifiers
+
+        return items.sorted { $0.size > $1.size }
     }
 
-    /// Gets names of installed applications.
-    private static func getInstalledAppNames() -> Set<String> {
+    // MARK: - Installed App Index
+
+    /// Index of installed apps used to determine if a leftover is orphaned.
+    private struct InstalledAppIndex {
+        var diskBundleIDs: Set<String>
+        var diskAppNames: Set<String>
+        var rootsReadable: Bool
+
+        var appCount: Int { diskBundleIDs.count }
+        var looksComplete: Bool { rootsReadable && appCount >= minimumPlausibleAppCount }
+
+        /// Whether an installed app owns this bundle id (exact or as parent).
+        func owns(bundleID: String) -> Bool {
+            let lower = bundleID.lowercased()
+            var components = lower.split(separator: ".").map(String.init)
+            while components.count >= 2 {
+                let candidate = components.joined(separator: ".")
+                if diskBundleIDs.contains(candidate) { return true }
+                components.removeLast()
+            }
+            return false
+        }
+
+        /// Whether an installed app owns this app group identifier.
+        func owns(appGroup identifier: String, teamID: String) -> Bool {
+            // If we can't verify, keep it (avoid false positives)
+            let name = String(identifier.dropFirst(teamID.count + 1))
+            if JunkScanner.looksLikeBundleID(name) && owns(bundleID: name) {
+                return true
+            }
+            return false
+        }
+    }
+
+    /// Builds an index of installed apps.
+    private static func makeInstalledAppIndex() -> InstalledAppIndex {
+        let fm = FileManager.default
+        var ids = Set<String>()
         var names = Set<String>()
-        let appPaths = [
-            "/Applications",
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path
+        var rootsReadable = true
+
+        let appRoots = [
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+            fm.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true)
         ]
 
-        for appPath in appPaths {
-            guard let contents = try? FileManager.default.contentsOfDirectory(atPath: appPath) else { continue }
-            for item in contents where item.hasSuffix(".app") {
-                let appName = (item as NSString).deletingPathExtension.lowercased()
-                let normalized = appName.replacingOccurrences(of: " ", with: "")
-                                       .replacingOccurrences(of: "-", with: "")
-                                       .replacingOccurrences(of: "_", with: "")
-                names.insert(normalized)
+        for root in appRoots {
+            guard fm.fileExists(atPath: root.path) else { continue }
+            guard let bundles = try? fm.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ) else {
+                rootsReadable = false
+                continue
+            }
+
+            for bundleURL in bundles where bundleURL.pathExtension == "app" {
+                if let bundle = Bundle(url: bundleURL) {
+                    if let id = bundle.bundleIdentifier, !id.isEmpty {
+                        ids.insert(id.lowercased())
+                    }
+                    if let name = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String, !name.isEmpty {
+                        names.insert(name.lowercased())
+                    }
+                    if let name = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String, !name.isEmpty {
+                        names.insert(name.lowercased())
+                    }
+                }
+                // Also add the app name from the bundle filename
+                let appName = bundleURL.deletingPathExtension().lastPathComponent.lowercased()
+                names.insert(appName)
             }
         }
-        return names
+
+        return InstalledAppIndex(
+            diskBundleIDs: ids,
+            diskAppNames: names,
+            rootsReadable: rootsReadable
+        )
+    }
+
+    // MARK: - Owner extraction
+
+    /// What a leftover's name says about its owner.
+    private enum LeftoverOwner: Equatable {
+        case bundleID(String)
+        case appGroup(String, teamID: String)
+    }
+
+    /// Extracts the owner from an entry name.
+    private static func candidateOwner(entryName name: String, url: URL) -> LeftoverOwner? {
+        // Check if it looks like a bundle ID
+        guard looksLikeBundleID(name) else {
+            // Check for UUID container with metadata
+            if name.count == 36 && name.contains("-") {
+                return containerMetadataOwner(at: url)
+            }
+            return nil
+        }
+
+        // Direct bundle ID
+        return .bundleID(name)
+    }
+
+    /// Reads container metadata to find the owning bundle ID.
+    private static func containerMetadataOwner(at url: URL) -> LeftoverOwner? {
+        let plistURL = url.appendingPathComponent(".com.apple.containermanagerd.metadata.plist")
+        guard let data = try? Data(contentsOf: plistURL),
+              let object = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
+              let dict = object as? [String: Any] else { return nil }
+
+        // Try nested structure first
+        if let info = dict["MCMMetadataInfo"] as? [String: Any],
+           let identifier = info["MCMMetadataIdentifier"] as? String,
+           !identifier.isEmpty {
+            return .bundleID(identifier)
+        }
+
+        // Try flat structure
+        if let identifier = dict["MCMMetadataIdentifier"] as? String, !identifier.isEmpty {
+            return .bundleID(identifier)
+        }
+
+        return nil
+    }
+
+    /// Whether a string looks like a reverse-DNS bundle identifier.
+    private static func looksLikeBundleID(_ value: String) -> Bool {
+        guard UUID(uuidString: value) == nil else { return false }
+        guard !value.contains(where: \.isWhitespace) else { return false }
+        let segments = value.split(separator: ".", omittingEmptySubsequences: false)
+        guard segments.count >= 2 else { return false }
+        guard segments.allSatisfy({ !$0.isEmpty }) else { return false }
+        guard let first = value.first, first.isLetter else { return false }
+        return true
+    }
+
+    /// Whether an owner is orphaned (no installed app claims it).
+    private static func isOrphan(owner: LeftoverOwner, installed: InstalledAppIndex) -> Bool {
+        switch owner {
+        case .bundleID(let id):
+            return !installed.owns(bundleID: id)
+        case .appGroup(let identifier, let teamID):
+            return !installed.owns(appGroup: identifier, teamID: teamID)
+        }
+    }
+
+    // MARK: - Content age
+
+    /// When anything inside a leftover was last changed.
+    private enum ContentAge {
+        case recent
+        case untouchedSince(Date)
+        case unknown
+    }
+
+    /// Files whose date says nothing about use.
+    private static let contentAgeIgnoredNames: Set<String> = [
+        ".DS_Store",
+        ".com.apple.containermanagerd.metadata.plist"
+    ]
+
+    /// How much later a folder's date may be than an ignored file.
+    private static let ignoredFileDateTolerance: TimeInterval = 2
+
+    /// Checks if content has been untouched since cutoff.
+    private static func contentAge(of url: URL, cutoff: Date) -> ContentAge {
+        let keys: Set<URLResourceKey> = [.contentModificationDateKey, .isDirectoryKey, .isSymbolicLinkKey]
+        var checkURL = url
+        checkURL.removeAllCachedResourceValues()
+
+        guard let top = try? checkURL.resourceValues(forKeys: keys),
+              let topDate = top.contentModificationDate,
+              topDate > .distantPast else { return .unknown }
+
+        guard top.isDirectory == true, top.isSymbolicLink != true else {
+            return topDate >= cutoff ? .recent : .untouchedSince(topDate)
+        }
+
+        // Walk directory to check all files
+        var unexplainedFolders: [String: Date] = [:]
+        var newest = Date.distantPast
+
+        if topDate >= cutoff {
+            unexplainedFolders[url.standardizedFileURL.resolvingSymlinksInPath().path] = topDate
+        } else {
+            newest = topDate
+        }
+
+        var failed = false
+        guard let enumerator = FileManager.default.enumerator(
+            at: url,
+            includingPropertiesForKeys: Array(keys),
+            options: [],
+            errorHandler: { _, _ in failed = true; return false }
+        ) else { return .unknown }
+
+        for case let item as URL in enumerator {
+            guard let values = try? item.resourceValues(forKeys: keys) else { return .unknown }
+            if values.isSymbolicLink == true { continue }
+
+            guard let date = values.contentModificationDate, date > .distantPast else { return .unknown }
+
+            if contentAgeIgnoredNames.contains(item.lastPathComponent) {
+                let parent = item.deletingLastPathComponent().standardizedFileURL.resolvingSymlinksInPath().path
+                if let folderDate = unexplainedFolders[parent],
+                   folderDate <= date.addingTimeInterval(ignoredFileDateTolerance) {
+                    unexplainedFolders[parent] = nil
+                }
+                continue
+            }
+
+            if values.isDirectory == true {
+                if date >= cutoff {
+                    unexplainedFolders[item.standardizedFileURL.resolvingSymlinksInPath().path] = date
+                } else if date > newest {
+                    newest = date
+                }
+                continue
+            }
+
+            if date >= cutoff { return .recent }
+            if date > newest { newest = date }
+        }
+
+        if failed { return .unknown }
+        if !unexplainedFolders.isEmpty { return .recent }
+        guard newest > .distantPast else { return .unknown }
+        return .untouchedSince(newest)
+    }
+
+    /// Recursively computes the total size of a file or directory.
+    private static func size(of url: URL) -> Int64 {
+        let fileManager = FileManager.default
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+            return 0
+        }
+
+        if !isDirectory.boolValue {
+            let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize
+            return Int64(size ?? 0)
+        }
+
+        guard let enumerator = fileManager.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
+            options: [],
+            errorHandler: nil
+        ) else {
+            return 0
+        }
+
+        var total: Int64 = 0
+        for case let fileURL as URL in enumerator {
+            let values = try? fileURL.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+            if values?.isRegularFile == true {
+                total += Int64(values?.fileSize ?? 0)
+            }
+        }
+        return total
     }
 
     // MARK: - Developer Tools Scanning
@@ -419,113 +726,6 @@ public struct JunkScanner {
         return items.sorted { $0.size > $1.size }
     }
 
-    // MARK: - Cache scanning
-
-    /// Scans user caches directory and determines safe defaults.
-    private func scanCaches() -> [JunkItem] {
-        var items: [JunkItem] = []
-        let cachesURL = libraryPath("Caches")
-
-        guard let entries = try? FileManager.default.contentsOfDirectory(
-            at: cachesURL,
-            includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]
-        ) else {
-            return items
-        }
-
-        for entry in entries {
-            let attributes = Self.attributes(for: entry)
-            guard attributes.size > 0 else { continue }
-
-            // Determine if safe to select by default
-            let name = entry.lastPathComponent
-            let selectedByDefault = shouldSelectCacheByDefault(name: name)
-
-            items.append(
-                JunkItem(
-                    path: entry.path,
-                    size: attributes.size,
-                    category: .userCaches,
-                    lastAccessDate: attributes.lastAccessDate,
-                    selectedByDefault: selectedByDefault
-                )
-            )
-        }
-
-        return items.sorted { $0.size > $1.size }
-    }
-
-    /// Determines if a cache directory should be selected by default.
-    private func shouldSelectCacheByDefault(name: String) -> Bool {
-        // Apple system caches that may be important
-        let appleSystemCaches = [
-            "com.apple.bird",
-            "com.apple.CloudPhotosConfiguration",
-            "com.apple.ContextStoreAgent",
-            "com.apple.Messages",
-            "com.apple.PhotoBooth",
-            "com.apple.Safari",
-            "com.apple.WebKit",
-            "com.apple.coremediaassetsd",
-            "com.apple.dt.Xcode",
-            "com.apple.icloud",
-            "com.apple.imessage",
-            "com.apple.passd",
-        ]
-
-        // Check if it's an Apple system cache that might be important
-        for prefix in appleSystemCaches {
-            if name.hasPrefix(prefix) {
-                return false
-            }
-        }
-
-        // Most third-party caches are safe
-        return true
-    }
-
-    // MARK: - Log scanning
-
-    /// Scans log files only.
-    private func scanLogs() -> [JunkItem] {
-        var items: [JunkItem] = []
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-
-        // Only scan actual log directories
-        let logPaths: [(path: String, selectedByDefault: Bool)] = [
-            ("\(home)/Library/Logs", true),
-            ("\(home)/Library/Application Support/CrashReporter", true),
-            ("/var/log", false), // System logs - not selected by default
-        ]
-
-        for (logPath, selected) in logPaths {
-            let dirURL = URL(fileURLWithPath: logPath)
-            guard let entries = try? FileManager.default.contentsOfDirectory(
-                at: dirURL,
-                includingPropertiesForKeys: nil,
-                options: [.skipsHiddenFiles]
-            ) else { continue }
-
-            for entry in entries {
-                let attributes = Self.attributes(for: entry)
-                guard attributes.size > 0 else { continue }
-
-                items.append(
-                    JunkItem(
-                        path: entry.path,
-                        size: attributes.size,
-                        category: .logs,
-                        lastAccessDate: attributes.lastAccessDate,
-                        selectedByDefault: selected
-                    )
-                )
-            }
-        }
-
-        return items.sorted { $0.size > $1.size }
-    }
-
     /// The total size in bytes across the given junk items.
     public static func totalSize(of items: [JunkItem]) -> Int64 {
         items.reduce(0) { $0 + $1.size }
@@ -581,11 +781,11 @@ public struct JunkScanner {
         for root in roots {
             guard !isExcluded(root.path),
                   let enumerator = FileManager.default.enumerator(
-                at: root,
-                includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey],
-                options: [.skipsHiddenFiles, .skipsPackageDescendants],
-                errorHandler: nil
-            ) else {
+                    at: root,
+                    includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey],
+                    options: [.skipsHiddenFiles, .skipsPackageDescendants],
+                    errorHandler: nil
+                ) else {
                 continue
             }
 
@@ -645,23 +845,6 @@ public struct JunkScanner {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library", isDirectory: true)
             .appendingPathComponent(component, isDirectory: true)
-    }
-
-    private func browserCacheDirectories() -> [URL] {
-        [
-            libraryPath("Caches/com.apple.Safari"),
-            libraryPath("Caches/Google/Chrome"),
-            libraryPath("Caches/Firefox"),
-        ]
-    }
-
-    private func developerCacheDirectories() -> [URL] {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        return [
-            libraryPath("Developer/Xcode/DerivedData"),
-            home.appendingPathComponent(".npm", isDirectory: true),
-            libraryPath("Caches/Yarn"),
-        ]
     }
 
     private func trashContents() -> [URL] {
