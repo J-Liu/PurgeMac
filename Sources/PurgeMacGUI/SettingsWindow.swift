@@ -206,9 +206,19 @@ final class SettingsWindow: NSWindow {
         stack.addArrangedSubview(makeRow(label: L("settings.updateCheck"), control: updateCheckRow))
 
         // Row: Privileged Helper
-        let helperStatusButton = NSButton(title: L("settings.privilegedHelper.setup"), target: self, action: #selector(setupPrivilegedHelper))
-        helperStatusButton.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
-        stack.addArrangedSubview(makeRow(label: L("settings.privilegedHelper"), control: helperStatusButton))
+        let helperPromptCheckbox = NSButton(checkboxWithTitle: L("settings.promptForHelper"), target: self, action: #selector(helperPromptChanged(_:)))
+        helperPromptCheckbox.state = UserDefaults.standard.object(forKey: "settings.promptForHelper") == nil ? .on : (UserDefaults.standard.bool(forKey: "settings.promptForHelper") ? .on : .off)
+        stack.addArrangedSubview(makeRow(label: L("settings.privilegedHelper"), control: helperPromptCheckbox))
+
+        // Row: Helper Status
+        let helperStatusLabel = NSTextField(labelWithString: "")
+        helperStatusLabel.stringValue = PrivilegedHelperManager.shared.isEnabled ? L("settings.privilegedHelper.enabled") : L("settings.privilegedHelper.notEnabled")
+        let helperSetupButton = NSButton(title: PrivilegedHelperManager.shared.isEnabled ? L("settings.privilegedHelper.openSettings") : L("settings.privilegedHelper.setup"), target: self, action: #selector(setupPrivilegedHelper))
+        helperSetupButton.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
+        let helperStatusRow = NSStackView(views: [helperStatusLabel, helperSetupButton])
+        helperStatusRow.orientation = .horizontal
+        helperStatusRow.spacing = 8
+        stack.addArrangedSubview(makeRow(label: "", control: helperStatusRow))
 
         return wrapInTopAlignedContainer(stack)
     }
@@ -552,18 +562,18 @@ final class SettingsWindow: NSWindow {
         }
     }
 
+    @objc private func helperPromptChanged(_ sender: NSButton) {
+        let shouldPrompt = sender.state == .on
+        UserDefaults.standard.set(shouldPrompt, forKey: "settings.promptForHelper")
+    }
+
     @objc private func setupPrivilegedHelper() {
         Task { @MainActor in
             let manager = PrivilegedHelperManager.shared
 
             if manager.isEnabled {
-                // Already enabled, show status
-                let alert = NSAlert()
-                alert.messageText = L("settings.privilegedHelper.enabled")
-                alert.informativeText = L("settings.privilegedHelper.enabledMessage")
-                alert.alertStyle = .informational
-                alert.addButton(withTitle: L("uninstall.alert.ok"))
-                alert.runModal()
+                // Already enabled, just open System Settings
+                manager.openSystemSettings()
             } else {
                 // Register and open System Settings
                 let success = manager.register()

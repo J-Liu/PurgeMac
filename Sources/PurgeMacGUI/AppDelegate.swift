@@ -3,6 +3,7 @@
 
 import AppKit
 import Sparkle
+import PurgeMacCore
 
 /// Application delegate that shows the primary window and configures updates.
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -21,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         createMainWindow()
         setupKeyHandlers()
         configureUpdateCheck()
+        checkPrivilegedHelper()
 
         // Listen for language changes
         NotificationCenter.default.addObserver(
@@ -32,6 +34,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Bring the app to the foreground when launched from a terminal.
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func checkPrivilegedHelper() {
+        // Check if user opted out of helper prompts
+        let shouldPrompt = UserDefaults.standard.bool(forKey: "settings.promptForHelper")
+        // Default to true if not set
+        let isPromptEnabled = UserDefaults.standard.object(forKey: "settings.promptForHelper") == nil ? true : shouldPrompt
+
+        guard isPromptEnabled else { return }
+
+        // Check helper status
+        Task { @MainActor in
+            PrivilegedHelperManager.shared.checkStatus()
+            if PrivilegedHelperManager.shared.isEnabled { return }
+
+            // Helper not enabled, ask user
+            let alert = NSAlert()
+            alert.messageText = L("helper.prompt.title")
+            alert.informativeText = L("helper.prompt.message")
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: L("helper.prompt.setup"))
+            alert.addButton(withTitle: L("helper.prompt.later"))
+            alert.addButton(withTitle: L("helper.prompt.dontAsk"))
+
+            let response = alert.runModal()
+            switch response {
+            case .alertFirstButtonReturn:
+                // Setup
+                _ = PrivilegedHelperManager.shared.register()
+                PrivilegedHelperManager.shared.openSystemSettings()
+            case .alertThirdButtonReturn:
+                // Don't ask again
+                UserDefaults.standard.set(false, forKey: "settings.promptForHelper")
+            default:
+                break
+            }
+        }
     }
 
     private func configureUpdateCheck() {
