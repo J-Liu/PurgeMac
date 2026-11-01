@@ -206,6 +206,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.selectedSize": "%@ will be freed",
         "clean.alert.move.title": "Move this file to the Trash?",
         "clean.selectAll": "Select All",
+        "clean.alert.failed.title": "Some items could not be moved to Trash",
 
         // Junk Categories
         "junk.userCaches": "User Caches",
@@ -384,6 +385,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.selectedSize": "将释放 %@",
         "clean.alert.move.title": "将此文件移至废纸篓？",
         "clean.selectAll": "全选",
+        "clean.alert.failed.title": "部分项目无法移至废纸篓",
 
         // Junk Categories
         "junk.userCaches": "用户缓存",
@@ -557,6 +559,7 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.selectedSize": "將釋放 %@",
         "clean.alert.move.title": "將此檔案移至垃圾桶？",
         "clean.selectAll": "全選",
+        "clean.alert.failed.title": "部分項目無法移至垃圾桶",
 
         // Junk Categories
         "junk.userCaches": "使用者快取",

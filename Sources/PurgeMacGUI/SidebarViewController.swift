@@ -196,8 +196,9 @@ final class SidebarViewController: NSViewController {
                 SidebarItem(title: L("sidebar.dev.scala"), identifier: "dev.scala", iconName: "chevron.left.forwardslash.chevron.right"),
             ])
         ]
-        // Expand System Junk by default (AI Models and Developer Tools stay collapsed)
+        // Expand System Junk and Developer Tools by default (AI Models stays collapsed)
         rootItems[1].isExpanded = true
+        rootItems[3].isExpanded = true
         flattenItems()
     }
 

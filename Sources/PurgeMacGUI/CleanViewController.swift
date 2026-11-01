@@ -354,6 +354,19 @@ final class CleanViewController: NSViewController {
                 self?.adjustColumnWidth(for: refreshed)
                 self?.updateSelectAllCheckboxState()
                 self?.updateMoveToTrashButtonVisibility()
+                
+                // Show failure alert if any items failed to delete
+                if !result.failures.isEmpty {
+                    let alert = NSAlert()
+                    alert.messageText = L("clean.alert.failed.title")
+                    let details = result.failures.prefix(5).map { "\($0.path): \($0.reason)" }.joined(separator: "\n")
+                    let more = result.failures.count > 5 ? "\n..." : ""
+                    alert.informativeText = "\(details)\(more)"
+                    alert.alertStyle = .warning
+                    alert.addButton(withTitle: L("uninstall.alert.ok"))
+                    alert.runModal()
+                }
+                
                 self?.statusLabel.stringValue = L("clean.status.freed", Self.formatBytes(result.freedBytes))
                 // Notify that files were deleted
                 NotificationCenter.default.post(name: .filesDeleted, object: nil)
