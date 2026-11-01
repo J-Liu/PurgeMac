@@ -14,7 +14,6 @@ let package = Package(
         .library(name: "PurgeMacCore", targets: ["PurgeMacCore"]),
         .executable(name: "PurgeMacCLI", targets: ["PurgeMacCLI"]),
         .executable(name: "PurgeMacGUI", targets: ["PurgeMacGUI"]),
-        .executable(name: "PurgeMacHelper", targets: ["PurgeMacHelper"]),
     ],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.0"),
@@ -31,11 +30,6 @@ let package = Package(
                 "PurgeMacCore",
                 .product(name: "Sparkle", package: "Sparkle"),
             ]
-        ),
-        .executableTarget(
-            name: "PurgeMacHelper",
-            dependencies: ["PurgeMacCore"],
-            resources: [.process("io.github.jia-liu.PurgeMac.helper.plist")]
         ),
     ]
 )

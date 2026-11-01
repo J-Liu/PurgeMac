@@ -348,65 +348,37 @@ final class CleanViewController: NSViewController {
             var finalResult = result
 
             if !permissionFailures.isEmpty {
-                // Check if privileged helper is enabled
-                let helperEnabled = await PrivilegedHelperManager.shared.isEnabled
+                // Ask user if they want to retry with admin privileges (password prompt)
+                let shouldRetry = await MainActor.run {
+                    let alert = NSAlert()
+                    alert.messageText = L("clean.alert.permission.title")
+                    alert.informativeText = L("clean.alert.permission.message", permissionFailures.count)
+                    alert.alertStyle = .warning
+                    alert.addButton(withTitle: L("clean.alert.permission.retry"))
+                    alert.addButton(withTitle: L("uninstall.alert.confirm.cancel"))
+                    return alert.runModal() == .alertFirstButtonReturn
+                }
 
-                if helperEnabled {
-                    // Try using privileged helper first (no password prompt)
-                    let retryURLs = permissionFailures.compactMap { failure -> URL? in
-                        URL(fileURLWithPath: failure.path)
+                if shouldRetry {
+                    // Retry with admin privileges via osascript
+                    let retryItems = permissionFailures.compactMap { failure -> JunkItem? in
+                        itemsCopy.first { $0.path == failure.path }
                     }
-                    if let helperResult = await PrivilegedHelperManager.shared.moveToTrash(retryURLs) {
-                        let succeededPaths = Set(result.succeeded.map(\.path))
-                        let helperSucceededItems = permissionFailures.compactMap { failure -> JunkItem? in
-                            guard helperResult.moved.contains(where: { $0.path == failure.path }),
-                                  let item = itemsCopy.first(where: { $0.path == failure.path }) else { return nil }
-                            return item
-                        }
-                        let newSucceeded = result.succeeded + helperSucceededItems.filter { !succeededPaths.contains($0.path) }
-                        let newFreed = result.freedBytes + helperSucceededItems.reduce(Int64(0)) { $0 + $1.size }
-                        let remainingFailures = result.failures.filter { failure in
-                            !helperResult.moved.contains { $0.path == failure.path }
-                        }
-                        finalResult = JunkCleanResult(
-                            succeeded: newSucceeded,
-                            failures: remainingFailures,
-                            freedBytes: newFreed
-                        )
-                    }
-                } else {
-                    // Ask user if they want to retry with admin privileges (password prompt)
-                    let shouldRetry = await MainActor.run {
-                        let alert = NSAlert()
-                        alert.messageText = L("clean.alert.permission.title")
-                        alert.informativeText = L("clean.alert.permission.message", permissionFailures.count)
-                        alert.alertStyle = .warning
-                        alert.addButton(withTitle: L("clean.alert.permission.retry"))
-                        alert.addButton(withTitle: L("uninstall.alert.confirm.cancel"))
-                        return alert.runModal() == .alertFirstButtonReturn
-                    }
+                    let retryResult = JunkCleaner().cleanWithAdminPrivileges(retryItems)
 
-                    if shouldRetry {
-                        // Retry with admin privileges via osascript
-                        let retryItems = permissionFailures.compactMap { failure -> JunkItem? in
-                            itemsCopy.first { $0.path == failure.path }
-                        }
-                        let retryResult = JunkCleaner().cleanWithAdminPrivileges(retryItems)
-
-                        // Merge results
-                        let succeededPaths = Set(result.succeeded.map(\.path))
-                        let newSucceeded = result.succeeded + retryResult.succeeded.filter { !succeededPaths.contains($0.path) }
-                        let newFreed = result.freedBytes + retryResult.freedBytes
-                        let remainingFailures = result.failures.filter { failure in
-                            !permissionFailures.contains { $0.path == failure.path } ||
-                            !retryResult.succeeded.contains { $0.path == failure.path }
-                        }
-                        finalResult = JunkCleanResult(
-                            succeeded: newSucceeded,
-                            failures: remainingFailures + retryResult.failures,
-                            freedBytes: newFreed
-                        )
+                    // Merge results
+                    let succeededPaths = Set(result.succeeded.map(\.path))
+                    let newSucceeded = result.succeeded + retryResult.succeeded.filter { !succeededPaths.contains($0.path) }
+                    let newFreed = result.freedBytes + retryResult.freedBytes
+                    let remainingFailures = result.failures.filter { failure in
+                        !permissionFailures.contains { $0.path == failure.path } ||
+                        !retryResult.succeeded.contains { $0.path == failure.path }
                     }
+                    finalResult = JunkCleanResult(
+                        succeeded: newSucceeded,
+                        failures: remainingFailures + retryResult.failures,
+                        freedBytes: newFreed
+                    )
                 }
             }
 
