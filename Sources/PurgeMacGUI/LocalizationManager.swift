@@ -207,6 +207,9 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.alert.move.title": "Move this file to the Trash?",
         "clean.selectAll": "Select All",
         "clean.alert.failed.title": "Some items could not be moved to Trash",
+        "clean.alert.permission.title": "Permission Denied",
+        "clean.alert.permission.message": "%d item(s) cannot be moved because you don't have permission. Retry with administrator privileges?",
+        "clean.alert.permission.retry": "Retry with Admin",
 
         // Junk Categories
         "junk.userCaches": "User Caches",
@@ -386,6 +389,9 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.alert.move.title": "将此文件移至废纸篓？",
         "clean.selectAll": "全选",
         "clean.alert.failed.title": "部分项目无法移至废纸篓",
+        "clean.alert.permission.title": "权限不足",
+        "clean.alert.permission.message": "%d 个项目因权限不足无法移动。使用管理员权限重试？",
+        "clean.alert.permission.retry": "使用管理员权限重试",
 
         // Junk Categories
         "junk.userCaches": "用户缓存",
@@ -560,6 +566,9 @@ private let localizedStrings: [AppLanguage: [String: String]] = [
         "clean.alert.move.title": "將此檔案移至垃圾桶？",
         "clean.selectAll": "全選",
         "clean.alert.failed.title": "部分項目無法移至垃圾桶",
+        "clean.alert.permission.title": "權限不足",
+        "clean.alert.permission.message": "%d 個項目因權限不足無法移動。使用管理員權限重試？",
+        "clean.alert.permission.retry": "使用管理員權限重試",
 
         // Junk Categories
         "junk.userCaches": "使用者快取",

@@ -9,10 +9,13 @@ public struct JunkFailure {
     public let path: String
     /// A human-readable description of why the move failed.
     public let reason: String
+    /// Whether the failure is due to permission issues (can retry with admin).
+    public var isPermissionError: Bool
 
-    public init(path: String, reason: String) {
+    public init(path: String, reason: String, isPermissionError: Bool = false) {
         self.path = path
         self.reason = reason
+        self.isPermissionError = isPermissionError
     }
 }
 
@@ -37,10 +40,6 @@ public final class JunkCleaner {
     public init() {}
 
     /// Moves each given item to the Trash, reporting successes and failures.
-    ///
-    /// Trash contents are emptied by permanently removing them. Large files are
-    /// moved to the Trash only when explicitly passed by callers (bulk cleanup
-    /// is expected to keep them list-only and exclude them here).
     public func clean(_ items: [JunkItem]) -> JunkCleanResult {
         var succeeded: [JunkItem] = []
         var failures: [JunkFailure] = []
@@ -51,7 +50,6 @@ public final class JunkCleaner {
             let url = URL(fileURLWithPath: item.path)
             do {
                 if item.category == .trash {
-                    // Emptying the Trash necessarily deletes its contents directly.
                     try fileManager.removeItem(at: url)
                 } else {
                     _ = try fileManager.trashItem(at: url, resultingItemURL: nil)
@@ -59,10 +57,80 @@ public final class JunkCleaner {
                 succeeded.append(item)
                 freedBytes += item.size
             } catch {
-                failures.append(JunkFailure(path: item.path, reason: error.localizedDescription))
+                let isPermissionError = Self.isPermissionError(error)
+                failures.append(JunkFailure(
+                    path: item.path,
+                    reason: error.localizedDescription,
+                    isPermissionError: isPermissionError
+                ))
             }
         }
 
         return JunkCleanResult(succeeded: succeeded, failures: failures, freedBytes: freedBytes)
+    }
+
+    /// Moves items to Trash using administrator privileges via osascript.
+    /// This prompts the user for their password.
+    public func cleanWithAdminPrivileges(_ items: [JunkItem]) -> JunkCleanResult {
+        var succeeded: [JunkItem] = []
+        var failures: [JunkFailure] = []
+        var freedBytes: Int64 = 0
+
+        for item in items {
+            let escapedPath = item.path.replacingOccurrences(of: "\"", with: "\\\"")
+            let script = "do shell script \"rm -rf '\(escapedPath)'\" with administrator privileges"
+
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            task.arguments = ["-e", script]
+
+            do {
+                try task.run()
+                task.waitUntilExit()
+
+                if task.terminationStatus == 0 {
+                    succeeded.append(item)
+                    freedBytes += item.size
+                } else {
+                    failures.append(JunkFailure(
+                        path: item.path,
+                        reason: "Command failed with exit code \(task.terminationStatus)",
+                        isPermissionError: false
+                    ))
+                }
+            } catch {
+                failures.append(JunkFailure(
+                    path: item.path,
+                    reason: error.localizedDescription,
+                    isPermissionError: false
+                ))
+            }
+        }
+
+        return JunkCleanResult(succeeded: succeeded, failures: failures, freedBytes: freedBytes)
+    }
+
+    /// Checks if an error is related to permissions.
+    private static func isPermissionError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        let domain = nsError.domain
+        let code = nsError.code
+
+        // NSFileManager errors
+        if domain == NSCocoaErrorDomain {
+            switch code {
+            case NSFileNoSuchFileError,
+                 NSFileLockingError,
+                 NSFileReadNoPermissionError,
+                 NSFileWriteNoPermissionError:
+                return true
+            default:
+                break
+            }
+        }
+
+        // Check error description for permission keywords
+        let description = error.localizedDescription.lowercased()
+        return description.contains("permission") || description.contains("access")
     }
 }

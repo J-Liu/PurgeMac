@@ -342,6 +342,44 @@ final class CleanViewController: NSViewController {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let result = JunkCleaner().clean(itemsCopy)
+
+            // Check if any failures are due to permission issues
+            let permissionFailures = result.failures.filter { $0.isPermissionError }
+            var finalResult = result
+
+            if !permissionFailures.isEmpty {
+                // Ask user if they want to retry with admin privileges
+                DispatchQueue.main.sync {
+                    let alert = NSAlert()
+                    alert.messageText = L("clean.alert.permission.title")
+                    alert.informativeText = L("clean.alert.permission.message", permissionFailures.count)
+                    alert.alertStyle = .warning
+                    alert.addButton(withTitle: L("clean.alert.permission.retry"))
+                    alert.addButton(withTitle: L("uninstall.alert.confirm.cancel"))
+                    if alert.runModal() == .alertFirstButtonReturn {
+                        // Retry with admin privileges
+                        let retryItems = permissionFailures.compactMap { failure -> JunkItem? in
+                            itemsCopy.first { $0.path == failure.path }
+                        }
+                        let retryResult = JunkCleaner().cleanWithAdminPrivileges(retryItems)
+
+                        // Merge results
+                        let succeededPaths = Set(result.succeeded.map(\.path))
+                        let newSucceeded = result.succeeded + retryResult.succeeded.filter { !succeededPaths.contains($0.path) }
+                        let newFreed = result.freedBytes + retryResult.freedBytes
+                        let remainingFailures = result.failures.filter { failure in
+                            !permissionFailures.contains { $0.path == failure.path } ||
+                            !retryResult.succeeded.contains { $0.path == failure.path }
+                        }
+                        finalResult = JunkCleanResult(
+                            succeeded: newSucceeded,
+                            failures: remainingFailures + retryResult.failures,
+                            freedBytes: newFreed
+                        )
+                    }
+                }
+            }
+
             let scanner = JunkScanner()
             let refreshed = scanner.scan(category: categoryCopy)
             DispatchQueue.main.async {
@@ -354,20 +392,20 @@ final class CleanViewController: NSViewController {
                 self?.adjustColumnWidth(for: refreshed)
                 self?.updateSelectAllCheckboxState()
                 self?.updateMoveToTrashButtonVisibility()
-                
-                // Show failure alert if any items failed to delete
-                if !result.failures.isEmpty {
+
+                // Show failure alert if any items still failed
+                if !finalResult.failures.isEmpty {
                     let alert = NSAlert()
                     alert.messageText = L("clean.alert.failed.title")
-                    let details = result.failures.prefix(5).map { "\($0.path): \($0.reason)" }.joined(separator: "\n")
-                    let more = result.failures.count > 5 ? "\n..." : ""
+                    let details = finalResult.failures.prefix(5).map { "\($0.path): \($0.reason)" }.joined(separator: "\n")
+                    let more = finalResult.failures.count > 5 ? "\n..." : ""
                     alert.informativeText = "\(details)\(more)"
                     alert.alertStyle = .warning
                     alert.addButton(withTitle: L("uninstall.alert.ok"))
                     alert.runModal()
                 }
-                
-                self?.statusLabel.stringValue = L("clean.status.freed", Self.formatBytes(result.freedBytes))
+
+                self?.statusLabel.stringValue = L("clean.status.freed", Self.formatBytes(finalResult.freedBytes))
                 // Notify that files were deleted
                 NotificationCenter.default.post(name: .filesDeleted, object: nil)
             }
