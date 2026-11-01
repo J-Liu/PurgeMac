@@ -79,11 +79,13 @@ public final class JunkCleaner {
         for item in items {
             let escapedPath = item.path.replacingOccurrences(of: "'", with: "'\\''")
             // Use a more robust deletion: clear flags and xattrs, then remove
-            let script = "do shell script \"chflags -R nouchg,noschg '\(escapedPath)' 2>/dev/null; xattr -cr '\(escapedPath)' 2>/dev/null; rm -rf '\(escapedPath)'\" with administrator privileges"
+            let script = "do shell script \"chflags -R nouchg,noschg '\(escapedPath)' 2>/dev/null; xattr -cr '\(escapedPath)' 2>/dev/null; rm -rf '\(escapedPath)' 2>&1\" with administrator privileges"
 
             let task = Process()
             task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
             task.arguments = ["-e", script]
+            let pipe = Pipe()
+            task.standardError = pipe
 
             do {
                 try task.run()
@@ -93,10 +95,25 @@ public final class JunkCleaner {
                     succeeded.append(item)
                     freedBytes += item.size
                 } else {
+                    let errorData = pipe.fileHandleForReading.readDataToEndOfFile()
+                    let errorMessage = String(data: errorData, encoding: .utf8) ?? "Unknown error"
+
+                    // Check for protected container error
+                    let isProtectedContainer = errorMessage.contains("containermanagerd.metadata.plist") ||
+                                                (errorMessage.contains("Operation not permitted") &&
+                                                 item.path.contains("/Containers/"))
+
+                    let reason: String
+                    if isProtectedContainer {
+                        reason = "Protected by macOS. Restart in Recovery Mode (Cmd+R) to delete, or use a signed cleanup app."
+                    } else {
+                        reason = errorMessage.isEmpty ? "Command failed with exit code \(task.terminationStatus)" : errorMessage
+                    }
+
                     failures.append(JunkFailure(
                         path: item.path,
-                        reason: "Command failed with exit code \(task.terminationStatus)",
-                        isPermissionError: false
+                        reason: reason,
+                        isPermissionError: !isProtectedContainer
                     ))
                 }
             } catch {
