@@ -17,6 +17,10 @@ public enum JunkCategory: String, Codable, CaseIterable {
     /// The contents of the Trash, cleaned by emptying it.
     case trash = "trash"
 
+    // MARK: - AI Models
+    /// Locally downloaded AI models (Ollama, HuggingFace, GPT4All, etc.).
+    case aiModels = "ai-models"
+
     // MARK: - Developer Tools
     /// Xcode derived data, archives, device support, etc.
     case devXcode = "dev-xcode"
@@ -45,6 +49,7 @@ public enum JunkCategory: String, Codable, CaseIterable {
         case .leftovers: return "App Leftovers"
         case .largeFiles: return "Large Files"
         case .trash: return "Trash"
+        case .aiModels: return "AI Models"
         case .devXcode: return "Xcode"
         case .devHomebrew: return "Homebrew"
         case .devNode: return "Node.js"

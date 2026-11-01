@@ -84,6 +84,9 @@ public struct JunkScanner {
             return scanLargeFiles()
         case .trash:
             return scanItems(trashContents(), category: category, timeFiltered: false)
+        // AI Models
+        case .aiModels:
+            return scanAIModels()
         // Developer tools
         case .devXcode:
             return scanDevXcode()
@@ -703,6 +706,43 @@ public struct JunkScanner {
             ("\(home)/Library/Logs/OrbStack", true),
         ]
         return scanDevPaths(paths, category: .devContainers)
+    }
+
+    // MARK: - AI Models Scanning
+
+    /// Scans locally downloaded AI models.
+    /// Strategy from purge-app's AIModelScanner:
+    /// - Ollama models in ~/.ollama/models
+    /// - HuggingFace Hub cache
+    /// - GPT4All models
+    /// - Jan models
+    /// - DiffusionBee models
+    /// - Draw Things models
+    /// - swift-transformers models
+    /// - PyTorch Hub
+    private func scanAIModels() -> [JunkItem] {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let paths: [(path: String, selected: Bool)] = [
+            // Ollama models (may be large, user choice)
+            ("\(home)/.ollama/models", false),
+            // HuggingFace Hub cache
+            ("\(home)/.cache/huggingface/hub", true),
+            ("\(home)/Library/Caches/huggingface/hub", true),
+            // GPT4All models
+            ("\(home)/.cache/gpt4all", false),
+            ("\(home)/Library/Application Support/gpt4all", false),
+            // Jan models
+            ("\(home)/.jan", false),
+            // DiffusionBee models
+            ("\(home)/Library/Application Support/DiffusionBee/models", false),
+            // Draw Things models
+            ("\(home)/Library/Application Support/Draw Things/models", false),
+            // swift-transformers models in Documents
+            ("\(home)/Documents/huggingface", false),
+            // PyTorch Hub
+            ("\(home)/.cache/torch/hub", true),
+        ]
+        return scanDevPaths(paths, category: .aiModels)
     }
 
     /// Helper to scan developer tool paths.

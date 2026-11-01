@@ -38,6 +38,8 @@ final class CleanViewController: NSViewController {
             autoScanCategory(.leftovers)
         case "clean.largeFiles":
             autoScanCategory(.largeFiles)
+        case "clean.aiModels":
+            autoScanCategory(.aiModels)
         case "dev.xcode":
             autoScanCategory(.devXcode)
         case "dev.homebrew":

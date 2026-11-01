@@ -12,6 +12,7 @@ extension JunkCategory {
         case .leftovers: return L("junk.leftovers")
         case .largeFiles: return L("junk.largeFiles")
         case .trash: return L("junk.trash")
+        case .aiModels: return L("junk.aiModels")
         case .devXcode: return L("junk.devXcode")
         case .devHomebrew: return L("junk.devHomebrew")
         case .devNode: return L("junk.devNode")
