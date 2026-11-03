@@ -413,6 +413,20 @@ final class SettingsWindow: NSWindow {
         checkUpdatesButton.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(checkUpdatesButton)
 
+        let licenseButton = NSButton(title: L("settings.about.license"), target: self, action: #selector(showLicense))
+        licenseButton.bezelStyle = .rounded
+        licenseButton.translatesAutoresizingMaskIntoConstraints = false
+
+        let noticeButton = NSButton(title: L("settings.about.notice"), target: self, action: #selector(showNotice))
+        noticeButton.bezelStyle = .rounded
+        noticeButton.translatesAutoresizingMaskIntoConstraints = false
+
+        let buttonRow = NSStackView(views: [licenseButton, noticeButton])
+        buttonRow.orientation = .horizontal
+        buttonRow.spacing = 16
+        buttonRow.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(buttonRow)
+
         NSLayoutConstraint.activate([
             appIcon.topAnchor.constraint(equalTo: container.topAnchor, constant: 40),
             appIcon.centerXAnchor.constraint(equalTo: container.centerXAnchor),
@@ -431,7 +445,10 @@ final class SettingsWindow: NSWindow {
 
             checkUpdatesButton.topAnchor.constraint(equalTo: githubButton.bottomAnchor, constant: 12),
             checkUpdatesButton.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            checkUpdatesButton.bottomAnchor.constraint(lessThanOrEqualTo: container.bottomAnchor, constant: -20)
+
+            buttonRow.topAnchor.constraint(equalTo: checkUpdatesButton.bottomAnchor, constant: 12),
+            buttonRow.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            buttonRow.bottomAnchor.constraint(lessThanOrEqualTo: container.bottomAnchor, constant: -20)
         ])
 
         return container
@@ -599,6 +616,87 @@ final class SettingsWindow: NSWindow {
         if let url = URL(string: "https://github.com/J-Liu/PurgeMac") {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    @objc private func showLicense() {
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 480, height: 350))
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+
+        let licenseText = """
+        GNU AFFERO GENERAL PUBLIC LICENSE
+        Version 3, 19 November 2007
+
+        Copyright (C) 2007 Free Software Foundation, Inc.
+        Copyright (C) 2026 Jia Liu
+
+        This program is free software: you can redistribute it and/or modify
+        it under the terms of the GNU Affero General Public License as published
+        by the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version.
+
+        This program is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+        GNU Affero General Public License for more details.
+
+        Full license text:
+        https://github.com/J-Liu/PurgeMac/blob/main/LICENSE
+        """
+
+        let attributedString = NSMutableAttributedString(string: licenseText, attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+        ])
+
+        let urlRange = (licenseText as NSString).range(of: "https://github.com/J-Liu/PurgeMac/blob/main/LICENSE")
+        attributedString.addAttribute(.link, value: "https://github.com/J-Liu/PurgeMac/blob/main/LICENSE", range: urlRange)
+        attributedString.addAttribute(.foregroundColor, value: NSColor.linkColor, range: urlRange)
+
+        textView.textStorage?.setAttributedString(attributedString)
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 500, height: 370))
+        scrollView.documentView = textView
+        scrollView.hasVerticalScroller = true
+        scrollView.borderType = .bezelBorder
+
+        let alert = NSAlert()
+        alert.messageText = L("settings.about.license")
+        alert.accessoryView = scrollView
+        alert.addButton(withTitle: L("OK"))
+        alert.beginSheetModal(for: self)
+    }
+
+    @objc private func showNotice() {
+        let notice = """
+        PurgeMac - A native macOS system cleanup utility
+        Copyright 2026 Jia Liu
+
+        This product includes software developed by Jia Liu.
+
+        The original PurgeMac project and its contributors must be credited
+        in any redistribution or derivative work. This attribution notice must
+        be retained in all copies or substantial portions of the software.
+        """
+
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 480, height: 200))
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.font = .systemFont(ofSize: 13, weight: .regular)
+        textView.string = notice
+        textView.textContainerInset = NSSize(width: 8, height: 8)
+
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 500, height: 220))
+        scrollView.documentView = textView
+        scrollView.hasVerticalScroller = true
+        scrollView.borderType = .bezelBorder
+
+        let alert = NSAlert()
+        alert.messageText = L("settings.about.notice")
+        alert.accessoryView = scrollView
+        alert.addButton(withTitle: L("OK"))
+        alert.beginSheetModal(for: self)
     }
 
     func selectTab(withIdentifier identifier: String) {
