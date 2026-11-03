@@ -146,6 +146,24 @@ final class SettingsWindow: NSWindow {
     private func createGeneralTab() -> NSView {
         let stack = makeVerticalStack()
 
+        // Row: Theme
+        let themePopup = NSPopUpButton()
+        let themes: [(key: String, value: Int)] = [
+            ("settings.theme.system", 0),
+            ("settings.theme.light", 1),
+            ("settings.theme.dark", 2)
+        ]
+        for theme in themes {
+            themePopup.addItem(withTitle: L(theme.key))
+            themePopup.lastItem?.representedObject = theme.value
+        }
+        let savedTheme = UserDefaults.standard.integer(forKey: "settings.theme")
+        themePopup.selectItem(at: savedTheme)
+        themePopup.target = self
+        themePopup.action = #selector(themeChanged(_:))
+        themePopup.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true
+        stack.addArrangedSubview(makeRow(label: L("settings.theme"), control: themePopup))
+
         // Row: Language
         languagePopup = NSPopUpButton()
         for language in AppLanguage.allCases {
@@ -557,6 +575,23 @@ final class SettingsWindow: NSWindow {
     @objc private func uninstallSelf() {
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.uninstallSelf()
+        }
+    }
+
+    @objc private func themeChanged(_ sender: NSPopUpButton) {
+        guard let value = sender.selectedItem?.representedObject as? Int else { return }
+        UserDefaults.standard.set(value, forKey: "settings.theme")
+        applyTheme(value)
+    }
+
+    private func applyTheme(_ value: Int) {
+        switch value {
+        case 1:
+            NSApp.appearance = NSAppearance(named: .aqua)
+        case 2:
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        default:
+            NSApp.appearance = nil
         }
     }
 

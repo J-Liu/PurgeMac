@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         createMainWindow()
         setupKeyHandlers()
         configureUpdateCheck()
+        applySavedTheme()
 
         // Listen for language changes
         NotificationCenter.default.addObserver(
@@ -32,6 +33,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Bring the app to the foreground when launched from a terminal.
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func applySavedTheme() {
+        let savedTheme = UserDefaults.standard.integer(forKey: "settings.theme")
+        switch savedTheme {
+        case 1:
+            NSApp.appearance = NSAppearance(named: .aqua)
+        case 2:
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        default:
+            NSApp.appearance = nil
+        }
     }
 
     private func configureUpdateCheck() {
