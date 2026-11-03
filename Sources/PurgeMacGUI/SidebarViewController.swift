@@ -19,6 +19,20 @@ struct SidebarItem {
     }
 }
 
+/// A view that updates its layer background color when appearance changes.
+private final class DiskUsageContainerView: NSView {
+    override var wantsUpdateLayer: Bool { true }
+    
+    override func updateLayer() {
+        layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+    }
+    
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+    }
+}
+
 /// Sidebar listing the top-level sections of the app with expandable submenus.
 final class SidebarViewController: NSViewController {
     private var rootItems: [SidebarItem] = []
@@ -27,7 +41,7 @@ final class SidebarViewController: NSViewController {
     private var selectedIdentifier: String = "uninstall"
 
     // Disk usage views
-    private let diskUsageContainer = NSView()
+    private let diskUsageContainer = DiskUsageContainerView()
     private let diskUsageLabel = NSTextField(labelWithString: "")
     private let diskUsageBar = NSProgressIndicator()
     private var diskInfoTimer: Timer?
@@ -54,7 +68,6 @@ final class SidebarViewController: NSViewController {
 
         // Disk usage container
         diskUsageContainer.wantsLayer = true
-        diskUsageContainer.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         diskUsageContainer.translatesAutoresizingMaskIntoConstraints = false
 
         let iconView = NSImageView()
